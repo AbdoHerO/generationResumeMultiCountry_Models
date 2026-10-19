@@ -41,6 +41,10 @@ with Composer, a shared `.env` and a shared `storage/`.
 | Database | MySQL (CloudOps creates the database and user) |
 | Health path | `/health` |
 
+CloudOps keeps the website's settings in `<app>/shared/.env` (its Environment page). It does not
+link that file into plain PHP releases, so the application reads it from there when the release
+has no `.env` of its own: see `app/bootstrap.php`.
+
 Environment, in addition to the `DB_*` values CloudOps provides: `APP_ENV=production`,
 `APP_DEBUG=false`, `APP_URL=https://resume.abdocloud.com`, a generated `APP_KEY`,
 `AUTO_MIGRATE=true` (CloudOps runs no migration command for plain PHP), `ADMIN_EMAIL`, a strong

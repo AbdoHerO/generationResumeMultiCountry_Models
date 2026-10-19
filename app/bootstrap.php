@@ -14,7 +14,14 @@ if (!is_file($autoload)) {
 require $autoload;
 require __DIR__ . '/helpers.php';
 
-App\Core\Env::load(BASE_PATH . '/.env');
+// .env next to the code; or, in a release layout (<app>/releases/<id>, with <app>/shared/.env as
+// CloudOps, Deployer and Capistrano use), the shared one when the release has none.
+$envFile = BASE_PATH . '/.env';
+if (!is_file($envFile) && basename(dirname(BASE_PATH)) === 'releases') {
+    $envFile = dirname(BASE_PATH, 2) . '/shared/.env';
+}
+App\Core\Env::load($envFile);
+unset($envFile);
 
 date_default_timezone_set((string) config('app.timezone', 'UTC'));
 mb_internal_encoding('UTF-8');
