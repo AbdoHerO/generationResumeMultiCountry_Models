@@ -53,8 +53,8 @@ try {
             if (!$user || $user['role'] !== 'admin') {
                 throw new RuntimeException('No administrator with that e-mail address.');
             }
-            $password = rtrim(strtr(base64_encode(random_bytes(12)), '+/', 'Ab'), '=') . '7';
-            Database::query('UPDATE users SET password_hash = ?, must_change_password = 1, status = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), 'active', $user['id']]);
+            $password = App\Models\User::setTemporaryPassword((int) $user['id']);
+            App\Models\User::setStatus((int) $user['id'], 'active');
             App\Models\AuditLog::record(null, 'admin.password_reset_cli', 'user', (int) $user['id']);
             $out("Temporary password for $email: $password");
             $out('It must be changed at the next sign-in.');

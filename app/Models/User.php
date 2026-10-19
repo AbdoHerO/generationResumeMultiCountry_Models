@@ -53,6 +53,55 @@ final class User
         );
     }
 
+    /**
+     * Replaces the password with a one-time temporary password the user must change at the next
+     * sign-in. The new hash also ends every open session of the user (see Auth::stamp).
+     * Returns the temporary password, to be shown once and never stored or logged.
+     */
+    public static function setTemporaryPassword(int $id): string
+    {
+        $password = self::temporaryPassword();
+        Database::query(
+            'UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?',
+            [password_hash($password, PASSWORD_DEFAULT), $id]
+        );
+        return $password;
+    }
+
+    /** An account created by an administrator: temporary password, to be changed at first sign-in. @return array{0: int, 1: string} */
+    public static function createWithTemporaryPassword(string $name, string $email, string $role = 'user'): array
+    {
+        $password = self::temporaryPassword();
+        Database::query(
+            'INSERT INTO users (name, email, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, 1)',
+            [$name, self::normalizeEmail($email), password_hash($password, PASSWORD_DEFAULT), $role === 'admin' ? 'admin' : 'user']
+        );
+        return [Database::lastId(), $password];
+    }
+
+    /** Readable random password (unambiguous characters, at least one letter and one digit), e.g. "kP7m-Qz3a-W9tx". */
+    public static function temporaryPassword(): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        do {
+            $chars = '';
+            for ($i = 0; $i < 12; $i++) {
+                $chars .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+        } while (!preg_match('/\d/', $chars) || !preg_match('/[A-Za-z]/', $chars));
+        return implode('-', str_split($chars, 4));
+    }
+
+    public static function updateByAdmin(int $id, string $name, string $email): void
+    {
+        Database::query('UPDATE users SET name = ?, email = ? WHERE id = ?', [$name, self::normalizeEmail($email), $id]);
+    }
+
+    public static function emailTakenByOther(string $email, int $id): bool
+    {
+        return (bool) Database::value('SELECT 1 FROM users WHERE email = ? AND id <> ?', [self::normalizeEmail($email), $id]);
+    }
+
     public static function rehashIfNeeded(int $id, string $password, string $hash): void
     {
         if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {

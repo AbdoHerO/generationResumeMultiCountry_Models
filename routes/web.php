@@ -77,6 +77,12 @@ return static function (Router $r): void {
     $r->group(['auth', 'password', 'admin'], function (Router $r): void {
         $r->get('/admin', [AdminController::class, 'dashboard']);
         $r->get('/admin/users', [AdminUserController::class, 'index']);
+        $r->get('/admin/users/new', [AdminUserController::class, 'create']);
+        $r->post('/admin/users', [AdminUserController::class, 'store']);
+        $r->get('/admin/users/{id}', [AdminUserController::class, 'show']);
+        $r->post('/admin/users/{id}', [AdminUserController::class, 'update']);
+        $r->post('/admin/users/{id}/password', [AdminUserController::class, 'resetPassword']);
+        $r->post('/admin/users/{id}/delete', [AdminUserController::class, 'destroy']);
         $r->post('/admin/users/{id}/status', [AdminUserController::class, 'status']);
         $r->post('/admin/users/{id}/role', [AdminUserController::class, 'role']);
         $r->get('/admin/templates', [AdminTemplateController::class, 'index']);

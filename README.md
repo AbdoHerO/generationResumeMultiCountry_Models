@@ -36,8 +36,9 @@ French, English, Arabic (right-to-left) or Simplified Chinese.
 - **PDF** — server-side with mPDF: strict A4, automatic extra pages, embedded fonts, Arabic shaping
   and right-to-left layout, Chinese glyphs, meaningful file names
   (`Camille_Laurent_CV_France.pdf`), downloads only for the owner.
-- **Administration** — overview statistics, users (search, filter, activate/deactivate, grant or
-  remove admin rights), templates (availability, name, description, category, languages,
+- **Administration** — overview statistics; users: search and filter, create an account (with a
+  temporary password shown once), edit name and e-mail, reset a password (signs the user out),
+  activate/deactivate, grant or remove admin rights, delete an account with its CVs; templates (availability, name, description, category, languages,
   recommended flag, order), countries and languages, application settings, and an activity log.
 - **Accessible and responsive** — keyboard navigation, labelled controls, visible focus,
   `prefers-reduced-motion`, and phone layouts including an Edit/Preview switch in the editor.

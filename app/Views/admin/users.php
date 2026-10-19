@@ -3,7 +3,8 @@
 $me = auth_user();
 $hidden = fn () => '<input type="hidden" name="q" value="' . e($q) . '"><input type="hidden" name="filter_status" value="' . e($status) . '"><input type="hidden" name="page" value="' . (int) $result['page'] . '">';
 ?>
-<div class="page-head"><div><h1>Users</h1><p><?= (int) $result['total'] ?> account(s). Passwords and CV contents are never shown.</p></div></div>
+<div class="page-head"><div><h1>Users</h1><p><?= (int) $result['total'] ?> account(s). Passwords and CV contents are never shown.</p></div>
+  <a class="btn btn-primary" href="<?= e(url('/admin/users/new')) ?>"><?= icon('plus', 16) ?> New user</a></div>
 
 <form class="filters" method="get" action="<?= e(url('/admin/users')) ?>" role="search" data-no-busy>
   <label class="sr-only" for="uq">Search users</label>
@@ -28,7 +29,7 @@ $hidden = fn () => '<input type="hidden" name="q" value="' . e($q) . '"><input t
       <tbody>
       <?php foreach ($result['rows'] as $u): $isMe = (int) $u['id'] === (int) $me['id']; ?>
         <tr>
-          <td><div style="font-weight:600"><?= e($u['name']) ?><?= $isMe ? ' <span class="badge">You</span>' : '' ?></div><div class="small muted"><?= e($u['email']) ?></div></td>
+          <td><div style="font-weight:600"><a href="<?= e(url('/admin/users/' . $u['id'])) ?>"><?= e($u['name']) ?></a><?= $isMe ? ' <span class="badge">You</span>' : '' ?></div><div class="small muted"><?= e($u['email']) ?></div></td>
           <td><?= $u['role'] === 'admin' ? '<span class="badge badge-primary">Administrator</span>' : '<span class="badge">User</span>' ?><?= (int) $u['must_change_password'] ? ' <span class="badge badge-warning" title="Must choose a new password at next sign-in">Temp. password</span>' : '' ?></td>
           <td><?= $u['status'] === 'active' ? '<span class="badge badge-success badge-dot">Active</span>' : '<span class="badge badge-danger badge-dot">Deactivated</span>' ?></td>
           <td><?= (int) $u['cv_count'] ?></td>
@@ -39,6 +40,7 @@ $hidden = fn () => '<input type="hidden" name="q" value="' . e($q) . '"><input t
             <div class="menu-wrap" style="display:inline-block">
               <button class="btn btn-ghost btn-sm btn-icon" type="button" data-menu-button aria-expanded="false" aria-controls="um-<?= (int) $u['id'] ?>" aria-label="Actions for <?= e($u['email']) ?>"><?= icon('ellipsis-vertical', 16) ?></button>
               <div class="menu" id="um-<?= (int) $u['id'] ?>" hidden>
+                <a href="<?= e(url('/admin/users/' . $u['id'])) ?>"><?= icon('pencil') ?> Manage account</a>
                 <form method="post" action="<?= e(url('/admin/users/' . $u['id'] . '/status')) ?>" data-confirm="<?= $u['status'] === 'active' ? 'Deactivate ' . e($u['email']) . '?' : 'Reactivate ' . e($u['email']) . '?' ?>"
                       data-confirm-message="<?= $u['status'] === 'active' ? 'The user is signed out immediately and cannot sign in until reactivated. Their CVs are kept.' : 'The user will be able to sign in again.' ?>"
                       data-confirm-button="<?= $u['status'] === 'active' ? 'Deactivate' : 'Reactivate' ?>" data-confirm-danger="<?= $u['status'] === 'active' ? '1' : '0' ?>" data-no-busy>

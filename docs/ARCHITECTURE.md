@@ -103,7 +103,8 @@ offered back on the next visit.
 | CSRF | per-session token, required on every non-GET request (form field or `X-CSRF-Token` header), compared with `hash_equals` |
 | Brute force | sign-in throttled per e-mail and IP (5 failures / 15 min), registrations per IP (10 / hour), uniform error message and dummy hash for unknown e-mails |
 | Ownership (IDOR) | every CV query is scoped by `user_id` (`Cv::findOwned`); another user's id answers 404 |
-| Authorization | `admin` middleware on every administration route; administrators cannot demote or deactivate themselves |
+| Authorization | `admin` middleware on every administration route; administrators cannot demote, deactivate, reset or delete themselves, and the last active administrator cannot be removed |
+| Account management | accounts created or reset by an administrator get a random temporary password (shown once on the next page, kept only in the session until then, never logged) and must choose their own at the next sign-in; a reset changes the hash, which ends the user's sessions |
 | Injection | PDO prepared statements only, emulation off; output escaped with `e()`; CV previews in a script-less sandboxed iframe; strict CSP (`script-src 'self'`) |
 | Uploads | size limit, MIME by `finfo`, `getimagesize` bounds, re-encoded with GD (drops metadata and payloads), random 128-bit names, stored under `storage/` outside the web root, served only to the owner |
 | Downloads | ownership checked, RFC 5987 file names built from letters and digits only |

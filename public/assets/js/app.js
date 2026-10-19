@@ -242,6 +242,23 @@
     download(link.href);
   });
 
+  /* ───────── Copy to clipboard: <button data-copy="element-id"> ───────── */
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const text = document.getElementById(btn.dataset.copy)?.textContent.trim() || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Copied.', 'success', 2000);
+    } catch (_) {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById(btn.dataset.copy));
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+      toast('Press Ctrl+C to copy.', 'info', 3000);
+    }
+  });
+
   function showFlash() {
     const el = document.getElementById('flash-data');
     if (!el) return;
