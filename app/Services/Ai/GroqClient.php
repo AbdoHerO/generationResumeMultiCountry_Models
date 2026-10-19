@@ -116,6 +116,10 @@ final class GroqClient
         if ($status < 200 || $status >= 300) {
             throw self::httpError($status, $response, $wait);
         }
+        $u = $response['usage'] ?? [];
+        // Token accounting only (never content): what each call costs against the account's limits.
+        Logger::info('AI usage', ['prompt' => (int) ($u['prompt_tokens'] ?? 0), 'completion' => (int) ($u['completion_tokens'] ?? 0),
+            'requested' => (int) ($body['max_completion_tokens'] ?? 0), 'finish' => (string) ($response['choices'][0]['finish_reason'] ?? '')]);
         $choice = $response['choices'][0] ?? null;
         $content = is_array($choice) ? (string) ($choice['message']['content'] ?? '') : '';
         if (($choice['finish_reason'] ?? '') === 'length') {

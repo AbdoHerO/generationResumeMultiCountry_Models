@@ -22,11 +22,15 @@ $user = (string) ($req['messages'][1]['content'] ?? $req['messages'][0]['content
 
 $answer = 'pong';
 if (str_starts_with($system, 'You convert')) {
-    $name = preg_match('/^\s*([A-ZÀ-Ý][\p{L}-]+ [A-ZÀ-Ý][\p{L}-]+)/mu', preg_replace('/^.*?"""\n/s', '', $user), $m) ? $m[1] : '';
+    $body = preg_replace('/^.*?"""\n/s', '', $user);
+    $plain = preg_replace('/^L\d+: /m', '', $body);
+    $name = preg_match('/^\s*([A-ZÀ-Ý][\p{L}-]+ [A-ZÀ-Ý][\p{L}-]+)/mu', $plain, $m) ? $m[1] : '';
+    // Like the real model with numbered lines: the summary comes back as a line reference.
+    $summary = preg_match('/^L(\d+): Développeuse full-stack avec/mu', $body, $m) ? 'L' . $m[1] : 'Développeuse expérimentée.';
     $answer = json_encode(['sourceLanguage' => 'fr', 'content' => [
         'personal' => ['fullName' => $name, 'headline' => 'Développeuse Full-Stack', 'email' => 'camille.laurent@example.fr', 'city' => 'Lyon'],
         'sections' => [
-            ['type' => 'summary', 'text' => 'Développeuse expérimentée.'],
+            ['type' => 'summary', 'text' => $summary],
             ['type' => 'experience', 'items' => [['title' => 'Développeuse PHP', 'organization' => 'Maison Verte', 'startDate' => '2021-03', 'current' => true, 'bullets' => ['Refonte du tunnel de commande']]]],
             ['type' => 'skills', 'items' => [['name' => 'PHP', 'category' => 'technical'], ['name' => 'Laravel', 'category' => 'technical']]],
             ['type' => 'languages', 'items' => [['name' => 'Français', 'level' => 'native']]],

@@ -53,7 +53,7 @@ return [
         'import_max_bytes' => 5 * 1024 * 1024,
         'import_max_chars' => 20000,
         // Seconds of work per import step request (each stays under the 60 s web server limit).
-        'step_budget' => 48,
+        'step_budget' => 30,
         'imports_per_hour' => 10,
     ],
 

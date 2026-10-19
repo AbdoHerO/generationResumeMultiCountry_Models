@@ -37,11 +37,13 @@
       <li data-step="en"><span class="st-ico"></span><span><strong>English</strong><span class="small muted">English version</span></span></li>
       <li data-step="zh"><span class="st-ico"></span><span><strong>简体中文</strong><span class="small muted">Chinese version</span></span></li>
     </ol>
+    <p class="small muted" id="import-elapsed" aria-live="off" hidden></p>
     <div class="alert alert-danger" id="import-error" hidden><?= icon('triangle-alert') ?><span></span></div>
     <div class="row" style="justify-content:flex-end;margin-top:12px">
       <button class="btn btn-secondary" type="button" id="import-retry" hidden><?= icon('refresh-cw', 16) ?> Retry</button>
     </div>
-    <p class="xs muted mb-0" style="margin-top:12px">Your PDF is processed and then deleted; it is never stored. Its text is sent to the AI service (Groq) only to build your profile.</p>
+    <p class="xs muted mb-0" style="margin-top:12px">Usually 1 to 3 minutes: the AI service limits how much it writes per minute, so the page sometimes waits and then continues by itself. You can leave and come back: the import continues from <em>Recent imports</em>.</p>
+    <p class="xs muted mb-0" style="margin-top:8px">Your PDF is processed and then deleted; it is never stored. Only its text is sent to the AI service (Groq), to build your profile.</p>
   </section>
 </div>
 <?php endif; ?>

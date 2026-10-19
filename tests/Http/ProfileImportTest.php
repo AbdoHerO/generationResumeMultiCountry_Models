@@ -109,6 +109,9 @@ final class ProfileImportTest extends HttpTestCase
         $data = $state['profile']['data'];
         $this->assertSame('Camille Laurent', $data['fr']['personal']['fullName']);
         $this->assertSame('Développeuse Full-Stack', $data['fr']['personal']['headline']);
+        // The summary came back as a line reference and was rebuilt from the PDF's own text.
+        $this->assertStringStartsWith('Développeuse full-stack avec 6 ans', $data['fr']['sections'][0]['text']);
+        $this->assertStringStartsWith('[en] Développeuse full-stack avec 6 ans', $data['en']['sections'][0]['text']);
         $this->assertSame('[en] Développeuse Full-Stack', $data['en']['personal']['headline']);
         $this->assertSame('[zh] Développeuse Full-Stack', $data['zh']['personal']['headline']);
         $this->assertSame('Camille Laurent', $data['zh']['personal']['fullName'], 'Names are kept');

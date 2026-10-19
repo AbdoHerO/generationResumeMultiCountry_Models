@@ -109,6 +109,38 @@ final class ImporterTest extends TestCase
         }
     }
 
+    public function testLineReferencesAreRebuiltFromThePdfText(): void
+    {
+        $lines = ['Camille Laurent', 'Développeuse full-stack avec 6 ans', 'd’expérience dans le e-commerce.', '• Refonte du tunnel de commande :',
+            'conversion +18 %.', '• Migration de l’API vers PHP 8.3.', '- Encadrement de deux juniors.'];
+        $answer = ['content' => ['personal' => ['fullName' => 'Camille Laurent', 'headline' => 'L99'], 'sections' => [
+            ['type' => 'summary', 'text' => 'L2-L3'],
+            ['type' => 'experience', 'items' => [['title' => 'Dev', 'bullets' => ['L4-L7']]]],
+            ['type' => 'custom', 'title' => 'X', 'items' => ['L6', 'Texte copié']],
+        ]]];
+        $r = ResumeImporter::resolveLineRefs($answer, $lines)['content'];
+        $this->assertSame('Développeuse full-stack avec 6 ans d’expérience dans le e-commerce.', $r['sections'][0]['text'], 'Wrapped lines joined');
+        $this->assertSame(['Refonte du tunnel de commande : conversion +18 %.', 'Migration de l’API vers PHP 8.3.', 'Encadrement de deux juniors.'],
+            $r['sections'][1]['items'][0]['bullets'], 'A range is split at bullet marks, continuation lines joined');
+        $this->assertSame(['Migration de l’API vers PHP 8.3.', 'Texte copié'], $r['sections'][2]['items'], 'Copied text is kept');
+        $this->assertSame('Camille Laurent', $r['personal']['fullName']);
+        $this->assertSame('', ResumeImporter::resolveLineRefs(['x' => 'L99'], $lines)['x']);
+    }
+
+    public function testPartsEndBeforeAHeadingNotInsideAnEntry(): void
+    {
+        $lines = [];
+        for ($i = 0; $i < 40; $i++) {
+            $lines[] = 'Réalisation numéro ' . $i . ' avec un texte assez long pour remplir la partie rapidement.';
+        }
+        $lines[12] = 'PROJETS';
+        $parts = ResumeImporter::splitLines($lines, 700);
+        $this->assertGreaterThan(1, count($parts));
+        $this->assertSame(range(0, 39), array_merge(...$parts), 'Every line once, in order');
+        $this->assertSame(12, $parts[1][0], 'The first part ends just before the heading, not at the size limit');
+        $this->assertSame(['Camille', 'Lyon'], ResumeImporter::lines(" Camille \n\n  Lyon  "));
+    }
+
     public function testRateLimitDurationsAndJsonAnswers(): void
     {
         $this->assertSame(7.0, GroqClient::seconds('7'));

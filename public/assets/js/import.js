@@ -88,6 +88,15 @@
       if (start) start.disabled = true;
       clearError();
       window.addEventListener('beforeunload', warn);
+      // Live elapsed time, so a wait for the AI quota never looks like a frozen page.
+      const elapsed = document.getElementById('import-elapsed');
+      const t0 = Date.now();
+      const tick = () => {
+        const s = Math.round((Date.now() - t0) / 1000);
+        if (elapsed) { elapsed.hidden = false; elapsed.textContent = `Working… ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} elapsed`; }
+      };
+      tick();
+      const timer = setInterval(tick, 1000);
       try {
         if (!importId) {
           mark('extract', 'running');
@@ -121,6 +130,7 @@
         showError(err.message);
         if (start) start.disabled = false;
       } finally {
+        clearInterval(timer);
         busy = false;
         window.removeEventListener('beforeunload', warn);
       }

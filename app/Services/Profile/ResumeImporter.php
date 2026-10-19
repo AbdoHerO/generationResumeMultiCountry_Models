@@ -14,8 +14,11 @@ use Smalot\PdfParser\Parser;
  * Turns a PDF CV into profile content in three languages.
  *
  * 1. The PDF's text is extracted on the server; the PDF itself is never stored.
- * 2. Extraction: the text is split into parts small enough for the model's output limit, each part
- *    is structured into CV JSON in the CV's own language, and the parts are merged.
+ * 2. Extraction: the lines of the text are numbered and split into parts that fit the model's output
+ *    limit. Each part is structured into CV JSON in the CV's own language; for long texts (summary,
+ *    descriptions, bullets) the model answers with line references ("L12-L14") instead of copying the
+ *    words, and the server rebuilds them from the PDF's own lines. That keeps the answer short (output
+ *    tokens are what Groq's free tier limits most) and the text exactly as written. Parts are merged.
  * 3. Translation: only the human-readable strings are sent to the model, in numbered batches, and
  *    put back in place. Structure, dates, e-mails, phone numbers and links never pass through the
  *    model, so a translation cannot damage them.
@@ -56,6 +59,7 @@ final class ResumeImporter
         if (!mb_check_encoding($text, 'UTF-8')) {
             $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
         }
+        $text = (string) preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}\x{00AD}]/u', '', $text); // invisible break hints
         $text = (string) preg_replace("/[ \t\x{00A0}]+/u", ' ', $text);
         $text = trim((string) preg_replace("/\n\s*\n\s*\n+/", "\n\n", str_replace("\r", '', $text)));
         if (mb_strlen($text) < 80) {
@@ -78,9 +82,9 @@ final class ResumeImporter
      * tokens, plus keys), breaking at blank lines, then lines, then characters.
      * @return list<string>
      */
-    public static function splitText(string $text, ?int $maxTokens = null): array
+    public static function splitText(string $text, ?int $maxTokens = null, float $outputFactor = 1.9): array
     {
-        $limit = (($maxTokens ?? GroqClient::maxTokens()) * 0.85 - 120) / 1.9;
+        $limit = (($maxTokens ?? GroqClient::maxTokens()) * 0.85 - 120) / $outputFactor;
         $pieces = [];
         foreach (preg_split("/\n\s*\n/u", $text) ?: [] as $para) {
             if (self::estimateTokens($para) <= $limit) {
@@ -120,14 +124,18 @@ final class ResumeImporter
      * @return array{language: string, content: array<string, mixed>}
      * @throws AiException
      */
-    public function extractPart(string $part, int $index, int $total, ?float $deadline = null): array
+    public function extractPart(string $part, int $index, int $total, ?float $deadline = null, ?array $lines = null): array
     {
         $intro = $total > 1
             ? "This is part " . ($index + 1) . " of $total of the same CV. Convert only what this part contains; "
                 . "if it starts in the middle of an entry, put those lines in an entry whose title fields are empty.\n"
             : '';
-        $answer = $this->client->json(self::extractPrompt(), $intro . "CV text:\n\"\"\"\n" . $part . "\n\"\"\"", null, $deadline);
+        $numbered = str_starts_with($part, 'L1: ') || preg_match('/^L\d+: /', $part) === 1;
+        $answer = $this->client->json($numbered ? self::extractPrompt() : self::extractPromptPlain(), $intro . "CV text:\n\"\"\"\n" . $part . "\n\"\"\"", null, $deadline);
         $language = strtolower(substr((string) preg_replace('/[^a-zA-Z]/', '', (string) ($answer['sourceLanguage'] ?? '')), 0, 2));
+        if ($lines !== null) {
+            $answer = self::resolveLineRefs($answer, $lines);
+        }
         return ['language' => $language, 'content' => self::contentOf($answer)];
     }
 
@@ -346,7 +354,184 @@ final class ResumeImporter
     /** Initial state of an import, from the CV text. @return array<string, mixed> */
     public static function start(string $text): array
     {
-        return ['work' => ['parts' => self::splitText($text), 'partials' => [], 'languages' => []]];
+        $lines = self::lines($text);
+        $parts = array_map(
+            fn (array $range) => implode("\n", array_map(fn (int $i) => 'L' . ($i + 1) . ': ' . $lines[$i], $range)),
+            self::splitLines($lines)
+        );
+        return ['work' => ['parts' => $parts, 'lines' => $lines, 'partials' => [], 'languages' => []]];
+    }
+
+    /**
+     * Groups line numbers into parts whose structured answer fits in one call. A part ends, by
+     * preference, just before a section heading, otherwise before a line that starts with a date
+     * (a new entry), so that an entry is not cut in two.
+     * @param list<string> $lines
+     * @return list<list<int>>
+     */
+    public static function splitLines(array $lines, ?int $maxTokens = null): array
+    {
+        $limit = (($maxTokens ?? GroqClient::maxTokens()) * 0.85 - 120) / self::REF_OUTPUT_FACTOR;
+        $cost = array_map(fn (int $i, string $l) => self::estimateTokens('L' . ($i + 1) . ': ' . $l) + 1, array_keys($lines), $lines);
+        $parts = [];
+        $n = count($lines);
+        $start = 0;
+        while ($start < $n) {
+            $end = $start;
+            $used = 0.0;
+            while ($end < $n && ($end === $start || $used + $cost[$end] <= $limit)) {
+                $used += $cost[$end];
+                $end++;
+            }
+            if ($end < $n) {
+                $floor = $start + max(1, (int) (($end - $start) * 0.5));
+                $cut = null;
+                foreach ([[self::class, 'isHeading'], [self::class, 'startsEntry']] as $test) {
+                    for ($i = $end; $i > $floor; $i--) {
+                        if ($test($lines[$i])) {
+                            $cut = $i;
+                            break 2;
+                        }
+                    }
+                }
+                $end = $cut ?? $end;
+            }
+            $parts[] = range($start, $end - 1);
+            $start = $end;
+        }
+        return $parts;
+    }
+
+    /** "EXPÉRIENCES PROFESSIONNELLES", "Work Experience", "工作经历": short, no digits, no final punctuation. */
+    private static function isHeading(string $line): bool
+    {
+        if (mb_strlen($line) > 48 || preg_match('/\d|[.,;:!?)]$|@|https?:/u', $line)) {
+            return false;
+        }
+        if (preg_match('/[\x{3000}-\x{9FFF}]/u', $line)) {
+            return mb_strlen($line) <= 8;
+        }
+        if (mb_strtoupper($line) === $line && preg_match('/\p{L}{3}/u', $line)) {
+            return true;
+        }
+        static $labels = null;
+        if ($labels === null) {
+            $labels = [];
+            foreach (['en', 'fr', 'ar', 'zh'] as $lang) {
+                foreach (\App\Services\Labels::for($lang)['sections'] as $label) {
+                    $labels[mb_strtolower($label)] = true;
+                }
+            }
+        }
+        $l = mb_strtolower(trim($line));
+        return isset($labels[$l])
+            || (substr_count($l, ' ') <= 3 && preg_match('/^(work |professional |relevant )?(experience|experiences|employment|education|skills|languages|projects|certifications?|awards|publications|interests|hobbies|references|summary|profile|profil|formation|compétences|langues|projets|expériences?|centres d’intérêt|loisirs)\b/u', $l) === 1);
+    }
+
+    /** A line that starts with a date ("2021", "mars 2021", "Jan 2021", "2014.09"): a new entry. */
+    private static function startsEntry(string $line): bool
+    {
+        return preg_match('/^(\p{L}{3,10}\.?\s+)?(19|20)\d{2}\b/u', $line) === 1;
+    }
+
+    /** Non-empty lines of the CV text, whitespace-normalised. @return list<string> */
+    public static function lines(string $text): array
+    {
+        $out = [];
+        foreach (preg_split('/\R/u', $text) ?: [] as $l) {
+            $l = trim((string) preg_replace('/\s+/u', ' ', $l));
+            if ($l !== '') {
+                $out[] = $l;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Structured answer size relative to the numbered text (minified JSON, long texts as line
+     * references): measured at 0.83 on a two-page CV; 1.0 keeps a margin so answers are not cut off.
+     */
+    private const REF_OUTPUT_FACTOR = 1.0;
+    private const BULLET_MARK = '/^[\x{2022}\x{25AA}\x{25CF}\x{25E6}\x{2023}\x{2043}\x{2219}\x{00B7}*\-\x{2013}\x{2014}]\s*/u';
+
+    /**
+     * Replaces line references ("L12", "L12-L14", "L3, L5-L6") by the lines' text, anywhere in the
+     * answer. Bullet lists split a referenced range at the PDF's bullet marks. Values that are not
+     * references (copied text) are kept as they are.
+     * @param array<string, mixed> $content
+     * @param list<string> $lines
+     * @return array<string, mixed>
+     */
+    public static function resolveLineRefs(array $content, array $lines): array
+    {
+        $walk = function (mixed $v, string $key) use (&$walk, $lines): mixed {
+            if (is_array($v)) {
+                if ($key === 'bullets' || $key === 'items') {
+                    $out = [];
+                    foreach ($v as $k => $item) {
+                        if (is_string($item) && ($ls = self::refLines($item, $lines)) !== null) {
+                            array_push($out, ...self::bulletsFrom($ls));
+                        } else {
+                            $out[$k] = $walk($item, is_string($k) ? $k : '');
+                        }
+                    }
+                    return array_is_list($v) ? array_values($out) : $out;
+                }
+                $out = [];
+                foreach ($v as $k => $item) {
+                    $out[$k] = $walk($item, is_string($k) ? $k : $key);
+                }
+                return $out;
+            }
+            if (is_string($v) && ($ls = self::refLines($v, $lines)) !== null) {
+                $hasMarks = count(array_filter($ls, fn ($l) => preg_match(self::BULLET_MARK, $l))) > 1;
+                return $hasMarks ? implode("\n", self::bulletsFrom($ls)) : implode(' ', array_map(fn ($l) => (string) preg_replace(self::BULLET_MARK, '', $l), $ls));
+            }
+            return $v;
+        };
+        return $walk($content, '');
+    }
+
+    /** The lines a reference string designates, or null when the string is not a reference. @param list<string> $lines @return list<string>|null */
+    private static function refLines(string $ref, array $lines): ?array
+    {
+        if (!preg_match('/^\s*L\d+(\s*(-|–|to)\s*L?\d+)?(\s*[,;]\s*L\d+(\s*(-|–|to)\s*L?\d+)?)*\s*$/u', $ref)) {
+            return null;
+        }
+        $out = [];
+        preg_match_all('/L(\d+)(?:\s*(?:-|–|to)\s*L?(\d+))?/u', $ref, $m, PREG_SET_ORDER);
+        foreach ($m as $g) {
+            $a = (int) $g[1];
+            $b = isset($g[2]) && $g[2] !== '' ? (int) $g[2] : $a;
+            if ($b < $a || $b - $a > 60) {
+                continue;
+            }
+            for ($i = $a; $i <= $b; $i++) {
+                if (isset($lines[$i - 1])) {
+                    $out[] = $lines[$i - 1];
+                }
+            }
+        }
+        return $out;
+    }
+
+    /** Lines → bullets: a new bullet at each bullet mark, continuation lines joined. @param list<string> $ls @return list<string> */
+    private static function bulletsFrom(array $ls): array
+    {
+        $out = [];
+        foreach ($ls as $l) {
+            $marked = (bool) preg_match(self::BULLET_MARK, $l);
+            $l = trim((string) preg_replace(self::BULLET_MARK, '', $l));
+            if ($l === '') {
+                continue;
+            }
+            if (!$marked && $out !== []) {
+                $out[count($out) - 1] .= ' ' . $l;
+            } else {
+                $out[] = $l;
+            }
+        }
+        return $out;
     }
 
     /**
@@ -375,7 +560,7 @@ final class ResumeImporter
         if (isset($w['parts']) && count($w['partials']) < count($parts)) {
             $i = count($w['partials']);
             try {
-                $r = $this->extractPart($parts[$i], $i, count($parts), $deadline);
+                $r = $this->extractPart($parts[$i], $i, count($parts), $deadline, $w['lines'] ?? null);
             } catch (AiException $e) {
                 if ($e->reason !== 'too_long' || mb_strlen($parts[$i]) < 200) {
                     throw $e;
@@ -442,7 +627,7 @@ final class ResumeImporter
                 $w['tr'][$lang] = ['batches' => self::batches($w['entries'], $lang), 'out' => []];
             }
         }
-        unset($w['parts'], $w['partials'], $w['languages']);
+        unset($w['parts'], $w['partials'], $w['languages'], $w['lines']);
     }
 
     /**
@@ -496,6 +681,21 @@ final class ResumeImporter
 
     public static function extractPrompt(): string
     {
+        return str_replace(
+            "You convert the text of a résumé (CV) into compact JSON for a CV builder. Answer with ONE JSON object and nothing else.\n",
+            "You convert the text of a résumé (CV) into compact JSON for a CV builder. Answer with ONE JSON object and nothing else.\n"
+            . "Each line of the CV text starts with its number, like \"L12: \". Do NOT copy long texts: for \"text\", \"description\", every bullet "
+            . "and the items of custom sections, write the line reference instead, \"L12\" or a range \"L12-L14\" (one reference per bullet; a bullet that "
+            . "continues on the next line is a range). Write short values in full: names, titles, organizations, places, dates, contact details, skills, "
+            . "languages, interests. Never copy the \"L12: \" prefixes into values.\n"
+            . "Write minified JSON: a single line, no indentation, no line breaks, no space after \":\" or \",\".\n",
+            self::extractPromptPlain()
+        );
+    }
+
+    /** The prompt for un-numbered text (imports started before line references existed). */
+    public static function extractPromptPlain(): string
+    {
         $types = implode(', ', array_keys(CvSchema::SECTION_TYPES));
         return <<<PROMPT
 You convert the text of a résumé (CV) into compact JSON for a CV builder. Answer with ONE JSON object and nothing else.
@@ -539,7 +739,7 @@ PROMPT;
         $toName = self::LANGUAGE_NAMES[$to] ?? $to;
         return <<<PROMPT
 You translate short texts taken from a résumé (CV) from $fromName into $toName.
-The input is {"items": [...]}. Answer with ONE JSON object {"items": [...]} containing exactly the same number of strings, in the same order, each one the translation of the corresponding input string, and nothing else.
+The input is {"items": [...]}. Answer with ONE JSON object {"items": [...]} containing exactly the same number of strings, in the same order, each one the translation of the corresponding input string, and nothing else. Write it as minified JSON on a single line.
 
 - Write natural, professional $toName as used in CVs. For Chinese, use Simplified Chinese.
 - Keep company, school, product and technology names unchanged unless an official $toName name exists; keep acronyms, numbers and units.

@@ -181,24 +181,33 @@ If no token is stored in the database, the `GROQ_API_KEY` of the server's `.env`
 ### 4.1 Pipeline
 
 ```
-PDF ──(smalot/pdfparser, on the server)──► text ──► split into parts
-     ──► for each part: Qwen structures it into CV JSON (its own language)
+PDF ──(smalot/pdfparser, on the server)──► text ──► numbered lines ("L12: …") ──► parts
+     ──► for each part: Qwen structures it into minified CV JSON (its own language);
+         long texts come back as line references ("L12-L14"), rebuilt by the server
      ──► parts merged into one CV ("source"), sanitised by CvSchema
      ──► the source language becomes its profile version (fr / en / zh)
      ──► the other versions: human-readable strings translated in batches, put back in place
      ──► review in the profile editor ──► "Save to my profile"
 ```
 
-### 4.2 Why it works in parts
+### 4.2 What is sent to the model, and why it works in parts
 
-Groq refuses any request whose `max_completion_tokens` exceeds the account's
-output-tokens-per-minute limit. On the free tier, this model allows **1,000 output tokens per
-minute**. A whole CV in JSON is larger than that, so the importer keeps every answer under a
-configurable cap (`GROQ_MAX_TOKENS`, default 950):
+**The PDF is never sent to Groq**, neither as a file nor as an image: only its text, extracted on
+the server. On the free tier, this model allows **1,000 output tokens per minute**, and Groq refuses
+any single request whose predicted answer exceeds that. What it counts is the smaller of
+`max_completion_tokens` and its own prediction of the answer's size, which it bases on similar
+earlier requests. Output tokens are therefore what limits an import's speed, so the importer keeps
+answers short, and each one under a configurable cap (`GROQ_MAX_TOKENS`, default 950):
 
-- **Extraction:** the text is split at blank lines, then lines, into parts whose JSON fits in one answer. Token counts are estimated per script: about 1 token per Chinese character, 1 per 2.5 Arabic and 1 per 3.5 Latin characters.
-  - Parts are merged: personal details come from the first part that has them, sections of the same type are joined, and an entry cut between two parts is re-attached.
-  - If an answer is still cut off, that part is split in two and retried.
+- **Extraction, once per CV:**
+  - The lines of the text are numbered (`L12: …`).
+  - For long texts (summary, descriptions, bullets, custom items) the model answers with **line references** (`"L12"`, `"L12-L14"`) instead of copying the words; the server rebuilds them from the PDF's own lines. A range in a bullet list is split at the PDF's bullet marks.
+  - Short values (names, titles, organisations, dates, skills) are written out, and copied text is accepted too.
+  - The JSON is asked for **minified** (no indentation): whitespace was a large share of the tokens.
+  - Lines are grouped into parts whose answer fits in one call. A part ends just before a section heading ("PROJETS", "Work Experience", "工作经历"), otherwise before a line starting with a date, so an entry is not cut in two.
+  - Parts are merged: personal details come from the first part that has them, sections of the same type are joined, and an entry still cut between two parts is re-attached.
+  - If an answer is cut off anyway, that part is split in two and retried.
+  - Token counts are estimated per script: about 1 token per Chinese character, 1 per 2.5 Arabic and 1 per 3.5 Latin characters.
 - **Translation:** only words are sent, as `{"items": [...]}`:
   - **sent:** headline, city, section titles, job titles, organisations, descriptions, bullets, skill and language names, and so on;
   - **never sent:** names of people, e-mails, phone numbers, links, dates, booleans and enumerations;
@@ -207,7 +216,7 @@ configurable cap (`GROQ_MAX_TOKENS`, default 950):
 
   The structure of the CV can therefore never be damaged by a translation.
 - **Resumable work:** the state of an import is saved in `profile_imports.data_json` after every model call.
-  - The page calls `POST /api/profile/imports/{id}/continue` repeatedly. Each call works for at most `step_budget` seconds (48), safely under the web server's 60-second limit, then returns the progress.
+  - The page calls `POST /api/profile/imports/{id}/continue` repeatedly. Each call works for at most `step_budget` seconds (30), safely under the web server's 60-second limit, then returns the progress. The page shows the elapsed time live.
   - A failure loses nothing: *Retry* or *Continue* resumes at the next part.
 
 With a paid Groq tier, set `GROQ_MAX_TOKENS=8192`: the CV is then structured in one call and translated in one call per language, which takes a few seconds.
@@ -226,9 +235,16 @@ With a paid Groq tier, set `GROQ_MAX_TOKENS=8192`: the CV is then structured in 
 - **When Groq answers HTTP 429**, the client reads `retry-after` (or `x-ratelimit-reset-*`).
   - A wait of 12 s or less, when it fits in the request's budget, happens on the server, followed by one retry.
   - Otherwise the API answers `429` with `errors.retryAfter`, and the import page counts down and calls `continue` again, up to 40 times.
-- **Measured with a free-tier key:**
-  - a one-page French CV went PDF → French, English and Chinese versions in about **110 seconds**, of which about 100 s were waiting for the quota;
-  - with a paid tier it takes a few seconds.
+- **Measured with a free-tier key** (two-page French CV, 2,556 characters, PDF → French, English and Chinese):
+
+  | | Before (text copied, indented JSON) | Now (line references, minified) |
+  |---|---|---|
+  | Calls | 7 (+7 refused for quota) | 6 |
+  | Output tokens | 3,135 | about 1,660 |
+  | Total time | 169 s | about 50 s |
+
+  Every call logs its token usage (`AI usage`: prompt, completion, finish reason; never content).
+  With a paid tier, an import takes a few seconds.
 - **Users** can start at most 10 imports per hour (`imports_per_hour`). Uploads refused by the AI quota are not counted.
 
 ### 4.5 Privacy

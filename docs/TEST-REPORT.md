@@ -62,6 +62,25 @@ The browser check of the new pages (profile in three languages, import page, wiz
 CV created from the profile with a new template, "Fill from my profile", admin AI settings)
 showed no console or network error.
 
+## Import speed fix (2026-10-19, measured with the real API)
+
+An import on the live site took more than 8 minutes and was abandoned. The server logs showed that
+every request waited for the free-tier quota (1,000 output tokens per minute), and that the
+structuring step made the model re-type the whole CV. After the fix, measured on the same two-page
+CV with the same key:
+
+| | Before | After |
+|---|---|---|
+| Calls | 7 (+7 refused) | 6 |
+| Output tokens | 3,135 | about 1,660 |
+| Total time | 169 s | about 50 s |
+
+French text rebuilt word for word from the PDF (line references, wrapped bullets joined), English and
+Chinese versions complete; the split between parts now falls before a section heading (a project
+bullet that had been lost at a part boundary is kept). Unit tests added for line references and
+splitting; the HTTP suite's Groq mock answers with a line reference; `vendor/bin/phpunit` → 66 tests,
+all passing.
+
 ## Not tested, or only partly
 
 - **The AI import on the production server** (it needs the administrator to enter a token there), and imports of long multi-page CVs, Arabic or Chinese PDFs, or unusual layouts with the real model. Model output quality varies; the review step exists for that.
