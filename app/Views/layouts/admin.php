@@ -30,7 +30,7 @@ $cur = fn (string $p) => ($path === url($p) || ($p !== '/admin' && str_starts_wi
       <button class="btn btn-ghost btn-icon" type="button" data-sidebar-toggle aria-expanded="false" aria-label="Open navigation"><?= icon('menu') ?></button>
       <?= App\Core\View::partial('partials/brand') ?><span class="badge badge-primary">Admin</span>
     </header>
-    <main class="page" id="main"><?= $content ?></main>
+    <main class="page page-wide" id="main"><?= $content ?></main>
   </div>
 </div>
 <?= App\Core\View::partial('partials/flash') ?>
