@@ -11,11 +11,16 @@ foreach ($templates as $t) {
   <section class="card" style="margin-bottom:20px" aria-labelledby="c-<?= e($code) ?>">
     <div class="card-header"><h2 id="c-<?= e($code) ?>" style="margin:0;font-size:1.05rem"><?= flag($code) ?> <?= e($countries[$code]['name'] ?? $code) ?></h2><span class="badge"><?= count(array_filter($list, fn ($t) => $t['is_active'])) ?> / <?= count($list) ?> available</span></div>
     <div class="table-wrap"><table class="table">
-      <thead><tr><th scope="col" style="width:90px">Preview</th><th scope="col">Template</th><th scope="col">Languages</th><th scope="col">CVs</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+      <thead><tr><th scope="col" style="width:140px">Preview</th><th scope="col">Template</th><th scope="col">Languages</th><th scope="col">CVs</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
       <tbody>
       <?php foreach ($list as $t): ?>
         <tr id="t-<?= (int) $t['id'] ?>">
-          <td><div class="tpl-thumb" style="width:72px;border-radius:4px;border:1px solid var(--border)"><iframe src="<?= e(url('/templates/' . $t['slug'] . '/preview')) ?>" title="" loading="lazy" tabindex="-1"></iframe></div></td>
+          <td>
+            <div class="thumb-zoom">
+              <div class="tpl-thumb"><iframe src="<?= e(url('/templates/' . $t['slug'] . '/preview')) ?>" title="" loading="lazy" tabindex="-1" aria-hidden="true"></iframe></div>
+              <button type="button" class="thumb-zoom-btn" data-preview="<?= e($t['slug']) ?>" data-name="<?= e($t['name']) ?>" data-langs="<?= e(implode(',', $t['languages'])) ?>" aria-label="Enlarge the preview of <?= e($t['name']) ?>" title="Enlarge"><span class="thumb-zoom-icon"><?= icon('zoom-in', 18) ?></span></button>
+            </div>
+          </td>
           <td style="min-width:260px">
             <details>
               <summary style="cursor:pointer"><strong><?= e($t['name']) ?></strong> <?= $t['is_recommended'] ? '<span class="badge badge-primary">Recommended</span>' : '' ?><div class="small muted"><?= e($t['slug']) ?> · <?= e($t['category']) ?> · <?= e($t['config']['layout']) ?> layout · order <?= (int) $t['sort_order'] ?></div></summary>
@@ -41,10 +46,13 @@ foreach ($templates as $t) {
           <td><?= (int) ($usage[$t['id']] ?? 0) ?></td>
           <td><?= $t['is_active'] ? '<span class="badge badge-success badge-dot">Available</span>' : '<span class="badge badge-dot">Hidden</span>' ?></td>
           <td style="text-align:right">
-            <form method="post" action="<?= e(url('/admin/templates/' . $t['id'] . '/toggle')) ?>" data-no-busy>
-              <?= csrf_field() ?>
-              <button class="btn btn-secondary btn-sm" type="submit"><?= icon($t['is_active'] ? 'eye-off' : 'eye', 15) ?> <?= $t['is_active'] ? 'Hide' : 'Make available' ?></button>
-            </form>
+            <div class="row" style="justify-content:flex-end;gap:8px;flex-wrap:nowrap">
+              <button class="btn btn-secondary btn-sm" type="button" data-preview="<?= e($t['slug']) ?>" data-name="<?= e($t['name']) ?>" data-langs="<?= e(implode(',', $t['languages'])) ?>"><?= icon('zoom-in', 15) ?> Preview</button>
+              <form method="post" action="<?= e(url('/admin/templates/' . $t['id'] . '/toggle')) ?>" data-no-busy>
+                <?= csrf_field() ?>
+                <button class="btn btn-secondary btn-sm" type="submit"><?= icon($t['is_active'] ? 'eye-off' : 'eye', 15) ?> <?= $t['is_active'] ? 'Hide' : 'Make available' ?></button>
+              </form>
+            </div>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -52,3 +60,21 @@ foreach ($templates as $t) {
     </table></div>
   </section>
 <?php endforeach; ?>
+
+<dialog class="dialog dialog-wide" id="tpl-dialog" aria-labelledby="tpl-dialog-title">
+  <div class="card-header">
+    <h2 id="tpl-dialog-title" style="margin:0;font-size:1.1rem"></h2>
+    <div class="row">
+      <label class="sr-only" for="tpl-lang">Document language</label>
+      <select class="select" id="tpl-lang" style="width:auto;min-height:34px;padding-top:4px;padding-bottom:4px"></select>
+      <div class="device-toggle" role="group" aria-label="Preview size">
+        <button type="button" data-device="desktop" aria-pressed="true"><?= icon('monitor', 16) ?> Desktop</button>
+        <button type="button" data-device="mobile" aria-pressed="false"><?= icon('smartphone', 16) ?> Phone</button>
+      </div>
+      <button class="btn btn-ghost btn-icon" type="button" data-close aria-label="Close preview"><?= icon('x') ?></button>
+    </div>
+  </div>
+  <div class="preview-frame-wrap" id="tpl-frame-wrap"><iframe id="tpl-frame" title="Template preview" width="794" height="1123"></iframe></div>
+  <div class="dialog-actions"><button class="btn btn-secondary" type="button" data-close>Close</button></div>
+</dialog>
+<script src="<?= e(asset('js/gallery.js')) ?>" defer></script>

@@ -136,6 +136,14 @@ final class AdminUserManagementTest extends HttpTestCase
         $this->assertSame(200, $admin->get('/admin')['status'], 'Still signed in');
     }
 
+    public function testTemplatePreviewsCanBeEnlarged(): void
+    {
+        $page = $this->admin()->get('/admin/templates')['body'];
+        $this->assertStringContainsString('id="tpl-dialog"', $page);
+        $this->assertSame(25, substr_count($page, 'class="thumb-zoom-btn"'), 'Every thumbnail opens the large preview');
+        $this->assertGreaterThanOrEqual(50, substr_count($page, 'data-preview="'), 'Thumbnail and Preview button for each template');
+    }
+
     public function testUsersCannotManageAccounts(): void
     {
         [$user] = $this->newUser();

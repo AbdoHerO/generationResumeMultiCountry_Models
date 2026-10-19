@@ -164,6 +164,13 @@ dialog.dialog::backdrop { background: rgba(16, 24, 40, .45); backdrop-filter: bl
 .dialog-icon.danger { background: var(--danger-soft); color: var(--danger); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: var(--s-4) var(--s-6); background: var(--surface-2); border-top: 1px solid var(--border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 dialog.dialog-wide { width: min(980px, calc(100vw - 32px)); }
+/* Admin template thumbnails: click to enlarge */
+.thumb-zoom { position: relative; width: 112px; }
+.thumb-zoom .tpl-thumb { border: 1px solid var(--border); border-radius: 4px; transition: box-shadow var(--t), border-color var(--t); }
+.thumb-zoom-btn { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 4px; }
+.thumb-zoom:hover .tpl-thumb, .thumb-zoom:focus-within .tpl-thumb { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-ring); }
+.thumb-zoom-icon { position: absolute; right: 6px; bottom: 6px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(16, 24, 40, .72); color: #fff; opacity: 0; transition: opacity var(--t); }
+.thumb-zoom:hover .thumb-zoom-icon, .thumb-zoom:focus-within .thumb-zoom-icon { opacity: 1; }
 
 /* ───────── Menus ───────── */
 .menu-wrap { position: relative; }

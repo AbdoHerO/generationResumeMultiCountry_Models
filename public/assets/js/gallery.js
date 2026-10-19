@@ -81,7 +81,7 @@
       slug = btn.dataset.preview;
       document.getElementById('tpl-dialog-title').textContent = btn.dataset.name;
       langSel.innerHTML = btn.dataset.langs.split(',').map((l) => `<option value="${l}">${LANG_NAMES[l] || l}</option>`).join('');
-      use.href = btn.closest('.tpl-card')?.querySelector('a.btn-primary')?.href || '#';
+      if (use) use.href = btn.closest('.tpl-card')?.querySelector('a.btn-primary')?.href || '#';
       load();
       dlg.showModal();
       requestAnimationFrame(fit);
