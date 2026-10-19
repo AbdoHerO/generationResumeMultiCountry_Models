@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory="storage/cache/phpunit"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Pdf">
+            <directory>tests/Pdf</directory>
+        </testsuite>
+        <testsuite name="Http">
+            <directory>tests/Http</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <!-- Tests use their own database, created and migrated by tests/bootstrap.php. -->
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="DB_DATABASE" value="cvbuilder_test" force="true"/>
+        <env name="AUTO_MIGRATE" value="false" force="true"/>
+        <env name="MAIL_MAILER" value="disabled" force="true"/>
+    </php>
+</phpunit>

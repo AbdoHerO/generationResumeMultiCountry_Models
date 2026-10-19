@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'name' => 'English',
+    'dir' => 'ltr',
+    'sections' => [
+        'summary' => 'Professional Summary',
+        'experience' => 'Professional Experience',
+        'education' => 'Education',
+        'skills' => 'Skills',
+        'languages' => 'Languages',
+        'certifications' => 'Certifications',
+        'projects' => 'Projects',
+        'internships' => 'Internships',
+        'volunteer' => 'Volunteer Experience',
+        'awards' => 'Awards & Achievements',
+        'publications' => 'Publications',
+        'interests' => 'Professional Interests',
+        'hobbies' => 'Hobbies',
+        'references' => 'References',
+        'additional' => 'Additional Information',
+        'custom' => 'Additional Section',
+        'contact' => 'Contact',
+    ],
+    'labels' => [
+        'present' => 'Present',
+        'email' => 'Email',
+        'phone' => 'Phone',
+        'address' => 'Address',
+        'website' => 'Website',
+        'linkedin' => 'LinkedIn',
+        'portfolio' => 'Portfolio',
+        'dateOfBirth' => 'Date of birth',
+        'nationality' => 'Nationality',
+        'workAuthorization' => 'Work authorization',
+        'drivingLicense' => 'Driving licence',
+        'hometown' => 'Hometown',
+        'technical' => 'Technical',
+        'soft' => 'Interpersonal',
+        'tools' => 'Tools',
+        'grade' => 'Grade',
+        'references_on_request' => 'References available upon request.',
+        'skills_core' => 'Core Competencies',
+        'transferable' => 'Transferable Skills',
+    ],
+    'months' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    'levels' => [
+        'beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced', 'expert' => 'Expert',
+        'native' => 'Native', 'fluent' => 'Fluent', 'professional' => 'Professional working proficiency', 'conversational' => 'Conversational', 'basic' => 'Basic',
+    ],
+    'employment_types' => [
+        'full_time' => 'Full-time', 'part_time' => 'Part-time', 'contract' => 'Contract', 'freelance' => 'Freelance',
+        'internship' => 'Internship', 'apprenticeship' => 'Apprenticeship', 'temporary' => 'Temporary',
+    ],
+    'date_formats' => ['month_year' => '{M} {Y}', 'numeric' => '{MM}/{Y}', 'year' => '{Y}'],
+];

@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'name' => 'العربية',
+    'dir' => 'rtl',
+    'sections' => [
+        'summary' => 'الملف المهني',
+        'experience' => 'الخبرة المهنية',
+        'education' => 'التكوين والشهادات',
+        'skills' => 'المهارات',
+        'languages' => 'اللغات',
+        'certifications' => 'الشهادات المهنية',
+        'projects' => 'المشاريع',
+        'internships' => 'التداريب',
+        'volunteer' => 'العمل التطوعي',
+        'awards' => 'الجوائز والإنجازات',
+        'publications' => 'المنشورات',
+        'interests' => 'الاهتمامات المهنية',
+        'hobbies' => 'الهوايات',
+        'references' => 'المراجع',
+        'additional' => 'معلومات إضافية',
+        'custom' => 'قسم إضافي',
+        'contact' => 'معلومات الاتصال',
+    ],
+    'labels' => [
+        'present' => 'حتى الآن',
+        'email' => 'البريد الإلكتروني',
+        'phone' => 'الهاتف',
+        'address' => 'العنوان',
+        'website' => 'الموقع الإلكتروني',
+        'linkedin' => 'لينكدإن',
+        'portfolio' => 'معرض الأعمال',
+        'dateOfBirth' => 'تاريخ الازدياد',
+        'nationality' => 'الجنسية',
+        'workAuthorization' => 'تصريح العمل',
+        'drivingLicense' => 'رخصة السياقة',
+        'hometown' => 'مسقط الرأس',
+        'technical' => 'تقنية',
+        'soft' => 'شخصية',
+        'tools' => 'أدوات',
+        'grade' => 'الميزة',
+        'references_on_request' => 'المراجع متوفرة عند الطلب.',
+        'skills_core' => 'المهارات الأساسية',
+        'transferable' => 'المهارات القابلة للنقل',
+    ],
+    'months' => ['يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو', 'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر'],
+    'levels' => [
+        'beginner' => 'مبتدئ', 'intermediate' => 'متوسط', 'advanced' => 'متقدم', 'expert' => 'خبير',
+        'native' => 'اللغة الأم', 'fluent' => 'بطلاقة', 'professional' => 'مستوى مهني', 'conversational' => 'محادثة', 'basic' => 'أساسي',
+    ],
+    'employment_types' => [
+        'full_time' => 'دوام كامل', 'part_time' => 'دوام جزئي', 'contract' => 'عقد محدد المدة', 'freelance' => 'عمل حر',
+        'internship' => 'تدريب', 'apprenticeship' => 'تكوين بالتناوب', 'temporary' => 'عمل مؤقت',
+    ],
+    'date_formats' => ['month_year' => '{M} {Y}', 'numeric' => '{MM}/{Y}', 'year' => '{Y}'],
+];

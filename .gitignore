@@ -1,0 +1,13 @@
+/vendor/
+/.env
+/storage/*
+!/storage/.gitkeep
+/.phpunit.cache/
+/tests/output/
+/node_modules/
+*.log
+.DS_Store
+Thumbs.db
+/tests/browser/node_modules/
+/tests/browser/shots/
+/tests/browser/package-lock.json

@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'name' => 'Français',
+    'dir' => 'ltr',
+    'sections' => [
+        'summary' => 'Profil professionnel',
+        'experience' => 'Expériences professionnelles',
+        'education' => 'Formation',
+        'skills' => 'Compétences',
+        'languages' => 'Langues',
+        'certifications' => 'Certifications',
+        'projects' => 'Projets',
+        'internships' => 'Stages',
+        'volunteer' => 'Engagement associatif',
+        'awards' => 'Distinctions',
+        'publications' => 'Publications',
+        'interests' => 'Centres d’intérêt professionnels',
+        'hobbies' => 'Loisirs',
+        'references' => 'Références',
+        'additional' => 'Informations complémentaires',
+        'custom' => 'Rubrique complémentaire',
+        'contact' => 'Contact',
+    ],
+    'labels' => [
+        'present' => 'aujourd’hui',
+        'email' => 'E-mail',
+        'phone' => 'Téléphone',
+        'address' => 'Adresse',
+        'website' => 'Site web',
+        'linkedin' => 'LinkedIn',
+        'portfolio' => 'Portfolio',
+        'dateOfBirth' => 'Date de naissance',
+        'nationality' => 'Nationalité',
+        'workAuthorization' => 'Autorisation de travail',
+        'drivingLicense' => 'Permis',
+        'hometown' => 'Ville d’origine',
+        'technical' => 'Techniques',
+        'soft' => 'Savoir-être',
+        'tools' => 'Outils',
+        'grade' => 'Mention',
+        'references_on_request' => 'Références disponibles sur demande.',
+        'skills_core' => 'Compétences clés',
+        'transferable' => 'Compétences transférables',
+    ],
+    'months' => ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+    'levels' => [
+        'beginner' => 'Débutant', 'intermediate' => 'Intermédiaire', 'advanced' => 'Avancé', 'expert' => 'Expert',
+        'native' => 'Langue maternelle', 'fluent' => 'Courant', 'professional' => 'Niveau professionnel', 'conversational' => 'Conversationnel', 'basic' => 'Notions',
+    ],
+    'employment_types' => [
+        'full_time' => 'CDI', 'part_time' => 'Temps partiel', 'contract' => 'CDD', 'freelance' => 'Indépendant',
+        'internship' => 'Stage', 'apprenticeship' => 'Alternance', 'temporary' => 'Intérim',
+    ],
+    'date_formats' => ['month_year' => '{M} {Y}', 'numeric' => '{MM}/{Y}', 'year' => '{Y}'],
+];

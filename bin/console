@@ -1,0 +1,76 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * ResumeAtlas command line.
+ *
+ *   php bin/console migrate              apply pending migrations, then the idempotent seeders
+ *   php bin/console seed                 run the idempotent seeders only (templates, admin, settings)
+ *   php bin/console seed:demo            development only: a demo user with sample CVs
+ *   php bin/console key:generate         print a new APP_KEY value
+ *   php bin/console admin:reset-password <email>   set a new random password (must be changed at sign-in)
+ *   php bin/console status               database, migrations and template counts
+ */
+
+define('BASE_PATH', dirname(__DIR__));
+require BASE_PATH . '/app/bootstrap.php';
+
+use App\Core\Database;
+use App\Core\Migrator;
+
+$command = $argv[1] ?? 'help';
+$out = fn (string $line) => fwrite(STDOUT, $line . PHP_EOL);
+
+try {
+    switch ($command) {
+        case 'migrate':
+            $applied = Migrator::migrate($out);
+            Migrator::seed($out);
+            @unlink(App\Core\Storage::path('cache') . '/schema.sig');
+            $out($applied ? 'Done.' : 'Nothing to migrate. Seeders checked.');
+            break;
+
+        case 'seed':
+            Migrator::seed($out);
+            break;
+
+        case 'seed:demo':
+            if (config('app.env') === 'production') {
+                throw new RuntimeException('seed:demo is disabled when APP_ENV=production.');
+            }
+            \Database\Seeders\DemoSeeder::run($out);
+            break;
+
+        case 'key:generate':
+            $out('APP_KEY=base64:' . base64_encode(random_bytes(32)));
+            break;
+
+        case 'admin:reset-password':
+            $email = strtolower(trim((string) ($argv[2] ?? '')));
+            $user = App\Models\User::findForAuth($email);
+            if (!$user || $user['role'] !== 'admin') {
+                throw new RuntimeException('No administrator with that e-mail address.');
+            }
+            $password = rtrim(strtr(base64_encode(random_bytes(12)), '+/', 'Ab'), '=') . '7';
+            Database::query('UPDATE users SET password_hash = ?, must_change_password = 1, status = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), 'active', $user['id']]);
+            App\Models\AuditLog::record(null, 'admin.password_reset_cli', 'user', (int) $user['id']);
+            $out("Temporary password for $email: $password");
+            $out('It must be changed at the next sign-in.');
+            break;
+
+        case 'status':
+            $out('Database: ' . config('database.database') . ' — server ' . Database::value('SELECT VERSION()'));
+            $out('Migrations applied: ' . (int) Database::value('SELECT COUNT(*) FROM schema_migrations'));
+            $out('Templates: ' . (int) Database::value('SELECT COUNT(*) FROM templates') . ' (' . (int) Database::value('SELECT COUNT(*) FROM templates WHERE is_active = 1') . ' active)');
+            $out('Users: ' . (int) Database::value('SELECT COUNT(*) FROM users') . ', CVs: ' . (int) Database::value('SELECT COUNT(*) FROM cvs'));
+            break;
+
+        default:
+            $out('Usage: php bin/console migrate | seed | seed:demo | key:generate | admin:reset-password <email> | status');
+    }
+} catch (Throwable $e) {
+    fwrite(STDERR, 'Error: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}

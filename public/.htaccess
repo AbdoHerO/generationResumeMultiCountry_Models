@@ -1,0 +1,16 @@
+# Apache front controller. Everything that is not an existing file goes to index.php.
+Options -Indexes -MultiViews
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|svg|ttf|woff2|png|jpg|webp)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
+# Never execute PHP anywhere below assets
+<FilesMatch "^(?!index\.php$).+\.php$">
+    Require all denied
+</FilesMatch>

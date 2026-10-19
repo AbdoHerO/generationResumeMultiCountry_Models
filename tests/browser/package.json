@@ -1,0 +1,7 @@
+{
+  "name": "resumeatlas-browser-check",
+  "private": true,
+  "description": "Optional browser check of the CV editor (not part of the application). Needs a local Chrome and the development demo data (php bin/console seed:demo).",
+  "scripts": { "check": "node editor-check.js" },
+  "devDependencies": { "puppeteer-core": "23.11.1" }
+}
