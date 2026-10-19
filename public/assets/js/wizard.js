@@ -35,6 +35,7 @@
       tip.hidden = !tips[c.value];
       tip.querySelector('span').textContent = tips[c.value] || '';
       next.disabled = false;
+      if (typeof updateFill === 'function') updateFill();
     }
 
     function showTemplates() {
@@ -79,7 +80,23 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // "Fill with my profile" is offered for the languages the profile has.
+    const fill = document.getElementById('from-profile');
+    const fillNote = document.getElementById('profile-fill-note');
+    const profileLangs = (document.getElementById('profile-fill')?.dataset.langs || '').split(',').filter(Boolean);
+    const NAMES = { fr: 'French', en: 'English', zh: 'Chinese', ar: 'Arabic' };
+    function updateFill() {
+      if (!fill) return;
+      const lang = language();
+      const ok = profileLangs.includes(lang);
+      fill.disabled = !ok;
+      if (!ok) fill.checked = false; else if (!fill.dataset.touched) fill.checked = true;
+      fillNote.textContent = ok ? `(${NAMES[lang]} version)` : `(your profile has no ${NAMES[lang] || lang} version)`;
+    }
+    fill?.addEventListener('change', () => { fill.dataset.touched = '1'; });
+
     form.addEventListener('change', (e) => {
+      if (e.target.name === 'language' || e.target.name === 'country') updateFill();
       if (e.target.name === 'country') updateLanguages();
       if (e.target.name === 'template') markSelected();
     });

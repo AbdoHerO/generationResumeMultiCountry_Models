@@ -23,5 +23,8 @@
         <env name="DB_DATABASE" value="cvbuilder_test" force="true"/>
         <env name="AUTO_MIGRATE" value="false" force="true"/>
         <env name="MAIL_MAILER" value="disabled" force="true"/>
+        <!-- Never call the real AI service from tests (the HTTP suite starts a local mock). -->
+        <env name="GROQ_API_URL" value="http://127.0.0.1:8766/openai/v1/chat/completions" force="true"/>
+        <env name="GROQ_MAX_TOKENS" value="950" force="true"/>
     </php>
 </phpunit>

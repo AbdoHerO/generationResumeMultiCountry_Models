@@ -52,6 +52,13 @@ $langName = fn (string $l) => App\Services\Countries::languageName($l);
         </div>
       </div>
       <div class="alert alert-info" style="margin-top:16px" id="country-tip" hidden><?= icon('lightbulb') ?><span></span></div>
+      <div class="profile-fill" id="profile-fill" data-langs="<?= e(implode(',', $profileLanguages)) ?>" style="margin-top:16px">
+        <?php if ($profileLanguages !== []): ?>
+          <label class="switch"><input type="checkbox" name="from_profile" value="1" id="from-profile" checked> <span>Fill this CV with my profile <span class="muted small" id="profile-fill-note"></span></span></label>
+        <?php else: ?>
+          <p class="small muted mb-0"><?= icon('user', 14) ?> Tip: <a href="<?= e(url('/profile')) ?>">fill in your profile</a> or <a href="<?= e(url('/profile/import')) ?>">import a PDF CV</a> once, and every new CV can start from it.</p>
+        <?php endif; ?>
+      </div>
     </div>
   </section>
 

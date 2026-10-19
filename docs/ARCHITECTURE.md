@@ -23,7 +23,9 @@ ErrorHandler turns exceptions into pages or JSON {ok:false, message, code}; 401 
 | Table | Purpose |
 |---|---|
 | `users` | name, e-mail (unique, lower-case), bcrypt hash, role (`user`/`admin`), status, `must_change_password`, last sign-in |
-| `templates` | 25 rows seeded from `config/templates.php`; admin-managed metadata plus code-owned `configuration_json` |
+| `templates` | 40 rows seeded from `config/templates.php`; admin-managed metadata plus code-owned `configuration_json` |
+| `profiles` | one per user: `{fr, en, zh}` CV contents, `version` (optimistic locking) |
+| `profile_imports` | a PDF import in progress or under review (resumable work state, then the three versions); deleted after 7 days |
 | `cvs` | owner, title, country, language, template, `content_json`, `design_json`, status, `version` (optimistic locking), private photo id |
 | `password_resets` | SHA-256 of single-use tokens, 60-minute expiry |
 | `login_attempts` | throttling for sign-in and registration |
@@ -110,3 +112,17 @@ offered back on the next visit.
 | Downloads | ownership checked, RFC 5987 file names built from letters and digits only |
 | Secrets | only in `.env` (never committed); errors and logs carry no passwords, tokens or CV content; password-reset links use `APP_URL`, never the Host header |
 | Proxies | client IP and HTTPS taken from forwarded headers only when the peer is in `TRUSTED_PROXIES` |
+
+## Profile and AI import
+
+See [DOCUMENTATION.md §4](../DOCUMENTATION.md#4-the-ai-import-in-detail). In short:
+
+- `ResumeImporter` extracts the PDF's text (smalot/pdfparser), splits it into parts that fit the
+  model's output limit, structures each part, merges them, then translates only human-readable
+  strings in batches.
+- The work is resumable: `POST /api/profile/imports/{id}/continue` advances it for at most 48 s
+  and saves the state after every model call.
+- `GroqClient` reloads its settings (encrypted token, model, reasoning) from the database before
+  every call, so an administrator's new token is used at once. It handles HTTP 429 by waiting on
+  the server (short waits) or returning `retryAfter` to the page.
+- The profile editor and the import review reuse `editor.js` in `profile` and `import` modes.

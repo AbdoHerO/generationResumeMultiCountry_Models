@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Controllers\Controller;
+use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -13,8 +14,10 @@ use App\Models\Cv;
 use App\Models\Setting;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\Ai\GroqClient;
 use App\Services\Auth;
 use App\Services\Countries;
+use App\Services\Secrets;
 
 /**
  * Administration: statistics, country/language configuration, settings and the audit log.
@@ -87,6 +90,7 @@ final class AdminController extends Controller
                 'support_email' => (string) Setting::get('support_email', ''),
                 'max_cvs_per_user' => (int) Setting::get('max_cvs_per_user', 50),
             ],
+            'ai' => self::aiView(),
         ], 'layouts/admin');
     }
 
@@ -117,6 +121,66 @@ final class AdminController extends Controller
         ], $request->ip());
         Session::flash('success', 'Settings saved.');
         return $this->redirect('/admin/settings');
+    }
+
+    /**
+     * AI (Groq) settings. The token is stored encrypted in the settings table and read again
+     * before every API call, so a new token is used at once, without any restart.
+     */
+    public function saveAi(Request $request): Response
+    {
+        $model = trim($request->string('ai_model'));
+        $reasoning = $request->string('ai_reasoning_effort');
+        $token = trim((string) $request->input('ai_api_key', ''));
+        $errors = [];
+        if ($model === '' || mb_strlen($model) > 100 || !preg_match('#^[A-Za-z0-9._/:-]+$#', $model)) {
+            $errors['ai_model'] = 'Enter a model name such as qwen/qwen3.8-27b.';
+        }
+        if (!in_array($reasoning, GroqClient::REASONING, true)) {
+            $errors['ai_reasoning_effort'] = 'Choose a valid option.';
+        }
+        if ($token !== '' && (strlen($token) < 20 || strlen($token) > 300 || preg_match('/\s/', $token))) {
+            $errors['ai_api_key'] = 'This does not look like an API token.';
+        }
+        if ($errors) {
+            return $this->backWithErrors('/admin/settings', $errors, ['ai_model' => $model]);
+        }
+        Setting::set(GroqClient::SETTING_MODEL, $model);
+        Setting::set(GroqClient::SETTING_REASONING, $reasoning);
+        Setting::set(GroqClient::SETTING_ENABLED, (bool) $request->input('ai_import_enabled'));
+        $tokenChange = 'unchanged';
+        if ($request->input('ai_remove_key')) {
+            Database::query('DELETE FROM settings WHERE name = ?', [GroqClient::SETTING_KEY]);
+            Setting::flush();
+            $tokenChange = 'removed';
+        } elseif ($token !== '') {
+            Setting::set(GroqClient::SETTING_KEY, Secrets::encrypt($token));
+            $tokenChange = 'replaced';
+        }
+        // The audit entry never contains the token.
+        AuditLog::record(Auth::id(), 'admin.ai_settings_updated', 'settings', null, [
+            'model' => $model, 'reasoning' => $reasoning, 'enabled' => (bool) $request->input('ai_import_enabled'), 'token' => $tokenChange,
+        ], $request->ip());
+        Session::flash('success', $tokenChange === 'replaced' ? 'AI settings saved. The new token is used from the next request.' : 'AI settings saved.');
+        return $this->redirect('/admin/settings#ai');
+    }
+
+    public function testAi(Request $request): Response
+    {
+        $result = GroqClient::testConnection();
+        AuditLog::record(Auth::id(), 'admin.ai_tested', 'settings', null, ['ok' => $result['ok'], 'model' => $result['model']], $request->ip());
+        Session::flash($result['ok'] ? 'success' : 'error', $result['message'] . ' (' . $result['ms'] . ' ms)');
+        return $this->redirect('/admin/settings#ai');
+    }
+
+    /** @return array<string, mixed> what the settings page shows about the AI service (never the token) */
+    private static function aiView(): array
+    {
+        $s = GroqClient::settings();
+        return [
+            'url' => $s['url'], 'model' => $s['model'], 'reasoning' => $s['reasoning'], 'enabled' => $s['enabled'],
+            'keySource' => $s['keySource'], 'keyMask' => $s['key'] !== null ? Secrets::mask($s['key']) : null,
+        ];
     }
 
     public function audit(Request $request): Response

@@ -20,13 +20,13 @@ final class CatalogueTest extends TestCase
             $byCountry[$t['country']][] = $t;
         }
         foreach (array_keys($countries) as $code) {
-            $this->assertGreaterThanOrEqual(5, count($byCountry[$code] ?? []), "$code has 5 templates");
+            $this->assertSame(8, count($byCountry[$code] ?? []), "$code has 8 templates (5 + 3 designer)");
             $first = $byCountry[$code][0];
             $this->assertSame('single', $first['config']['layout'], "The first $code template is a simple single-column layout");
             $this->assertTrue($first['recommended'], "The first $code template is recommended");
         }
-        $this->assertCount(25, array_unique(array_column(config('templates'), 'slug')));
-        $this->assertCount(25, array_unique(array_column(config('templates'), 'name')), 'Template names are distinct');
+        $this->assertCount(40, array_unique(array_column(config('templates'), 'slug')));
+        $this->assertCount(40, array_unique(array_column(config('templates'), 'name')), 'Template names are distinct');
     }
 
     public function testTemplatesUseKnownSettings(): void

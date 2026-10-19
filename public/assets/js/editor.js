@@ -17,6 +17,10 @@
   const { api, toast, confirmDialog, promptDialog, dialog, icon, escapeHtml } = window.App;
 
   /* ───────────────────────── state ───────────────────────── */
+  // "cv": a CV with its live preview. "profile" / "import": the global profile (or a PDF import
+  // under review) in three language versions, without preview, design or template.
+  const MODE = S.mode || 'cv';
+  const IS_CV = MODE === 'cv';
   const doc = {
     title: S.cv.title,
     country: S.cv.country,
@@ -25,6 +29,12 @@
     content: S.cv.content,
     design: S.cv.design,
   };
+  if (!IS_CV) {
+    doc.data = S.profile.data;
+    doc.content = doc.data[doc.language];
+  }
+  // In profile mode doc.content is the current language version inside doc.data.
+  const relink = () => { if (!IS_CV) doc.content = doc.data[doc.language]; };
   let version = S.cv.version;
   let hasPhoto = S.cv.hasPhoto;
   let photoUrl = hasPhoto ? `${root.dataset.download.replace(/\/download$/, '')}/photo?v=${Date.now()}` : null;
@@ -57,12 +67,13 @@
   const LANG_LEVELS = ['native', 'fluent', 'professional', 'conversational', 'basic'];
   const CEFR = ['C2', 'C1', 'B2', 'B1', 'A2', 'A1'];
 
-  const template = () => S.templates.find((t) => t.id === doc.templateId) || S.templates[0];
+  const NO_TEMPLATE = { photo: false, variants: [], languages: [], defaults: {}, layout: 'single' };
+  const template = () => S.templates.find((t) => t.id === doc.templateId) || S.templates[0] || NO_TEMPLATE;
   const country = () => S.countries[doc.country];
   const labels = () => S.labels[doc.language] || S.labels.en;
   const dirAttr = () => (labels().dir === 'rtl' ? 'rtl' : 'auto');
   const uid = (p) => `${p}_${Math.random().toString(16).slice(2, 12)}`;
-  const snapshot = () => JSON.stringify(doc);
+  const snapshot = () => JSON.stringify(IS_CV ? doc : { ...doc, content: undefined });
 
   /* ───────────────────────── DOM helper ───────────────────────── */
   function h(tag, attrs, ...children) {
@@ -112,6 +123,7 @@
   }
   function applySnapshot(s) {
     Object.assign(doc, JSON.parse(s));
+    relink();
     lastKey = null;
     renderAll();
     afterChange();
@@ -179,11 +191,12 @@
   }
 
   function payload() {
+    if (!IS_CV) return { version, data: doc.data };
     return { version, title: doc.title, country: doc.country, language: doc.language, templateId: doc.templateId, content: doc.content, design: doc.design };
   }
 
   function backup() {
-    try { localStorage.setItem(BACKUP_KEY, JSON.stringify({ version, at: Date.now(), doc })); } catch (_) { /* storage unavailable */ }
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify({ version, at: Date.now(), doc: JSON.parse(snapshot()) })); } catch (_) { /* storage unavailable */ }
   }
   function clearBackup() {
     try { localStorage.removeItem(BACKUP_KEY); } catch (_) { /* ignore */ }
@@ -202,7 +215,7 @@
       version = res.version;
       savedSeq = seq;
       retryDelay = 0;
-      if (res.title && res.title !== doc.title) { doc.title = res.title; renderTitle(); }
+      if (IS_CV && res.title && res.title !== doc.title) { doc.title = res.title; renderTitle(); }
       if (changeSeq === savedSeq) { setStatus('saved'); clearBackup(); } else { setStatus('dirty'); scheduleSave(); }
       if (manual) toast('All changes saved.', 'success', 2500);
       return true;
@@ -294,12 +307,15 @@
   let zoom = 'fit';
   let exactPages = null;
 
+  const HAS_PREVIEW = !!stage;
   function schedulePreview(delay = 300) {
+    if (!HAS_PREVIEW) return;
     clearTimeout(previewTimer);
     previewTimer = setTimeout(refreshPreview, delay);
   }
 
   async function refreshPreview() {
+    if (!HAS_PREVIEW) return;
     previewCtl?.abort();
     previewCtl = new AbortController();
     const slow = setTimeout(() => { loading.hidden = false; }, 350);
@@ -354,6 +370,7 @@
   }
 
   function layoutPreview() {
+    if (!HAS_PREVIEW) return;
     const z = currentZoom();
     frame.style.height = contentHeight + 'px';
     frame.style.transform = `scale(${z})`;
@@ -384,6 +401,7 @@
   let pagesTimer = null;
   let pagesCtl = null;
   function scheduleExactPages() {
+    if (!HAS_PREVIEW) return;
     exactPages = null;
     clearTimeout(pagesTimer);
     pagesTimer = setTimeout(async () => {
@@ -397,11 +415,13 @@
     }, 4000);
   }
 
-  document.getElementById('zoom-in').addEventListener('click', () => { zoom = Math.min(2, Math.round((currentZoom() + 0.1) * 10) / 10); layoutPreview(); });
-  document.getElementById('zoom-out').addEventListener('click', () => { zoom = Math.max(0.3, Math.round((currentZoom() - 0.1) * 10) / 10); layoutPreview(); });
-  document.getElementById('zoom-fit').addEventListener('click', () => { zoom = zoom === 'fit' ? 1 : 'fit'; layoutPreview(); });
-  document.getElementById('page-guides').addEventListener('change', layoutPreview);
-  if ('ResizeObserver' in window) new ResizeObserver(() => { if (zoom === 'fit') layoutPreview(); }).observe(stage);
+  if (HAS_PREVIEW) {
+    document.getElementById('zoom-in').addEventListener('click', () => { zoom = Math.min(2, Math.round((currentZoom() + 0.1) * 10) / 10); layoutPreview(); });
+    document.getElementById('zoom-out').addEventListener('click', () => { zoom = Math.max(0.3, Math.round((currentZoom() - 0.1) * 10) / 10); layoutPreview(); });
+    document.getElementById('zoom-fit').addEventListener('click', () => { zoom = zoom === 'fit' ? 1 : 'fit'; layoutPreview(); });
+    document.getElementById('page-guides').addEventListener('change', layoutPreview);
+    if ('ResizeObserver' in window) new ResizeObserver(() => { if (zoom === 'fit') layoutPreview(); }).observe(stage);
+  }
 
   /* ───────────────────────── form building blocks ───────────────────────── */
   function textField(label, value, onInput, { key, multiline = false, type = 'text', placeholder = '', max = 200, hint = '', rows = 4, span2 = false, optional = false, inputmode, autocomplete } = {}) {
@@ -630,7 +650,7 @@
         if (optFields.length) {
           const more = h('div', { class: 'form-grid', hidden: !showMorePersonal && !optFields.some((k) => p[k]) });
           optFields.forEach((k) => more.append(textField(OPTIONAL_LABELS[k], p[k], set(k), { key: `p.${k}`, max: k === 'workAuthorization' ? 120 : 80, optional: true, hint: OPTIONAL_HINTS[k] || '' })));
-          const btn = h('button', { type: 'button', class: 'link-btn small more-toggle', 'aria-expanded': String(!more.hidden) }, more.hidden ? `Show details often included in ${c.name}` : `Details often included in ${c.name}`);
+          const btn = h('button', { type: 'button', class: 'link-btn small more-toggle', 'aria-expanded': String(!more.hidden) }, IS_CV ? (more.hidden ? `Show details often included in ${c.name}` : `Details often included in ${c.name}`) : (more.hidden ? 'Show optional personal details' : 'Optional personal details'));
           btn.addEventListener('click', () => { more.hidden = !more.hidden; showMorePersonal = !more.hidden; btn.setAttribute('aria-expanded', String(!more.hidden)); });
           nodes.push(btn, more);
         }
@@ -1198,14 +1218,14 @@
 
   /* ───────────────────────── title, progress, tabs ───────────────────────── */
   const titleBtn = document.getElementById('ed-title');
-  function renderTitle() { titleBtn.textContent = doc.title; document.title = `${doc.title} · ${document.title.split(' · ').pop()}`; }
+  function renderTitle() { if (!IS_CV) return; titleBtn.textContent = doc.title; document.title = `${doc.title} · ${document.title.split(' · ').pop()}`; }
   async function rename() {
     const v = await promptDialog({ title: 'Rename this CV', input: { label: 'Name (only you see it)', value: doc.title, maxlength: 120 }, confirmText: 'Rename', iconName: 'pencil' });
     if (!v || v === doc.title) return;
     change(null, () => { doc.title = v; });
     renderTitle();
   }
-  titleBtn.addEventListener('click', rename);
+  if (IS_CV) titleBtn.addEventListener('click', rename);
 
   function updateProgress() {
     const p = doc.content.personal;
@@ -1232,7 +1252,7 @@
       const on = t === tab;
       t.setAttribute('aria-selected', String(on));
       t.tabIndex = on ? 0 : -1;
-      panes[t.id].hidden = !on;
+      if (panes[t.id]) panes[t.id].hidden = !on;
     });
   }
   tabs.forEach((t, i) => {
@@ -1259,14 +1279,59 @@
     if (!ok && changeSeq !== savedSeq) { toast('Save your changes before downloading.', 'error'); return; }
     window.App.download(root.dataset.download);
   }
-  document.getElementById('ed-download').addEventListener('click', download);
-  document.getElementById('ed-save').addEventListener('click', () => save({ manual: true }));
-  document.getElementById('ed-menu').addEventListener('click', async (e) => {
+  document.getElementById('ed-download')?.addEventListener('click', download);
+  document.getElementById('ed-save')?.addEventListener('click', () => save({ manual: true }));
+
+  // Profile and import: switch between the French, English and Chinese versions.
+  const langButtons = [...document.querySelectorAll('[data-profile-lang]')];
+  function showLanguage(lang) {
+    doc.language = lang;
+    relink();
+    langButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.profileLang === lang)));
+    renderContent();
+    updateProgress();
+  }
+  langButtons.forEach((b) => b.addEventListener('click', () => showLanguage(b.dataset.profileLang)));
+
+  // Import review: replace the profile with the reviewed data.
+  document.getElementById('ed-apply')?.addEventListener('click', async () => {
+    if (S.profileExists && !(await confirmDialog({
+      title: 'Replace your profile?',
+      message: 'Your current profile (all three languages) is replaced by this imported version.',
+      confirmText: 'Replace my profile', iconName: 'user',
+    }))) return;
+    if (!(await save({ manual: false })) && changeSeq !== savedSeq) { toast('Save your changes first.', 'error'); return; }
+    try {
+      const r = await api(`${API}/apply`, { body: { version } });
+      unloadGuard = false;
+      clearBackup();
+      location.href = r.profileUrl;
+    } catch (err) { toast(err.message, 'error', 7000); }
+  });
+
+  // CV: replace the content with the profile version in the CV's language (undoable).
+  async function fillFromProfile() {
+    let r;
+    try {
+      r = await api(`${API}/from-profile`, { body: { language: doc.language, country: doc.country, templateId: doc.templateId } });
+    } catch (err) { toast(err.message, 'error', 7000); return; }
+    const ok = await confirmDialog({
+      title: 'Fill this CV from your profile?',
+      message: `The content is replaced by the ${r.languageName} version of your profile. Design and template are kept. You can undo with Ctrl+Z.`,
+      confirmText: 'Fill from profile', iconName: 'user',
+    });
+    if (!ok) return;
+    change(null, () => { doc.content = r.content; }, { rerender: true });
+    toast('Filled from your profile. Edit anything before downloading.', 'success', 4000);
+  }
+
+  document.getElementById('ed-menu')?.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-action]');
     if (!b) return;
     const a = b.dataset.action;
     if (a === 'rename') rename();
     if (a === 'save') save({ manual: true });
+    if (a === 'from-profile') fillFromProfile();
     if (a === 'duplicate') {
       await save();
       try {
@@ -1299,8 +1364,11 @@
   /* ───────────────────────── start ───────────────────────── */
   function renderAll() {
     renderContent();
-    renderDesign();
-    renderTemplates();
+    if (IS_CV) {
+      renderDesign();
+      renderTemplates();
+    }
+    langButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.profileLang === doc.language)));
     renderTitle();
     updateProgress();
   }
@@ -1319,6 +1387,7 @@
     if (restore) {
       record(null);
       Object.assign(doc, b.doc);
+      relink();
       renderAll();
       afterChange();
       toast('Changes restored. They will be saved now.', 'success', 3500);

@@ -67,6 +67,28 @@ return [
         'gutter' => 38,
         'variants' => ['split', 'left'],
     ]),
+    $t(['slug' => 'fr-elegance', 'name' => 'France Élégance', 'country' => 'FR', 'category' => 'elegant', 'recommended' => false,
+        'description' => 'Refined serif typography, a centred portrait, marker headings and a timeline of your career: graceful and very readable.'], [
+        'layout' => 'single', 'header' => 'centered', 'heading' => 'marker', 'entry' => 'timeline', 'skills' => 'columns',
+        'font' => 'plexserif', 'heading_font' => 'plexserif', 'accent' => '#6D28D9', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'circle', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'italic',
+        'variants' => ['centered', 'left'],
+    ]),
+    $t(['slug' => 'fr-horizon', 'name' => 'France Horizon', 'country' => 'FR', 'category' => 'creative', 'recommended' => false,
+        'description' => 'A deep-coloured side column with your photo and skills, and bold solid section bands: striking yet professional.'], [
+        'layout' => 'sidebar', 'heading' => 'solid', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'lato', 'accent' => '#0F766E', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'circle', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'sidebar' => ['width' => 66, 'style' => 'dark'],
+        'variants' => ['left', 'right'],
+    ]),
+    $t(['slug' => 'fr-atelier', 'name' => 'France Atelier', 'country' => 'FR', 'category' => 'modern', 'recommended' => false,
+        'description' => 'A warm tinted header card with your photo, a highlighted profile box and dates in a margin column.'], [
+        'layout' => 'single', 'header' => 'tinted', 'heading' => 'marker', 'entry' => 'dates-left', 'skills' => 'grouped',
+        'font' => 'firasans', 'accent' => '#B45309', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 24, 'summary' => 'boxed',
+        'variants' => ['tinted', 'left'],
+    ]),
 
     // ───────────── Morocco ─────────────
     $t(['slug' => 'ma-essential', 'name' => 'Morocco Essential', 'country' => 'MA', 'category' => 'classic', 'recommended' => true,
@@ -109,6 +131,28 @@ return [
         'section_order' => ['summary', 'education', 'internships', 'experience', 'projects', 'skills', 'languages', 'interests'],
         'variants' => ['left', 'photo-right'],
     ]),
+    $t(['slug' => 'ma-prestige', 'name' => 'Morocco Prestige', 'country' => 'MA', 'category' => 'executive', 'recommended' => false,
+        'description' => 'A navy header band, serif typography and a career timeline: an executive look for senior and management roles.'], [
+        'layout' => 'single', 'header' => 'band', 'heading' => 'marker', 'entry' => 'timeline', 'skills' => 'columns',
+        'font' => 'ptserif', 'heading_font' => 'ptserif', 'accent' => '#1F3A5F', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'upper', 'name_size' => 22, 'summary' => 'italic',
+        'variants' => ['band', 'centered'],
+    ]),
+    $t(['slug' => 'ma-atlas', 'name' => 'Morocco Atlas', 'country' => 'MA', 'category' => 'creative', 'recommended' => false,
+        'description' => 'An emerald side column with photo, contact details and languages, and solid section bands in the main column.'], [
+        'layout' => 'sidebar', 'heading' => 'solid', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'lato', 'accent' => '#047857', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'circle', 'name_case' => 'normal', 'name_size' => 24, 'summary' => 'plain',
+        'sidebar' => ['width' => 64, 'style' => 'dark'],
+        'variants' => ['left', 'right'],
+    ]),
+    $t(['slug' => 'ma-sahara', 'name' => 'Morocco Sahara', 'country' => 'MA', 'category' => 'modern', 'recommended' => false,
+        'description' => 'Warm amber tones, a tinted header card with photo and a framed profile: friendly, modern and easy to scan.'], [
+        'layout' => 'single', 'header' => 'tinted', 'heading' => 'solid', 'entry' => 'stacked', 'skills' => 'grouped',
+        'font' => 'firasans', 'accent' => '#B45309', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 24, 'summary' => 'boxed',
+        'variants' => ['tinted', 'left'],
+    ]),
 
     // ───────────── United States ─────────────
     $t(['slug' => 'us-ats-classic', 'name' => 'US ATS Classic', 'country' => 'US', 'category' => 'classic', 'recommended' => true,
@@ -148,6 +192,28 @@ return [
         'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 22, 'summary' => 'plain',
         'section_order' => ['summary', 'education', 'skills', 'projects', 'internships', 'experience', 'volunteer'],
         'variants' => ['centered', 'left'],
+    ]),
+    $t(['slug' => 'us-impact', 'name' => 'US Impact', 'country' => 'US', 'category' => 'modern', 'recommended' => false,
+        'description' => 'A blue header card, a highlighted summary and marker headings that put measurable results front and centre. No photo.'], [
+        'layout' => 'single', 'header' => 'tinted', 'heading' => 'marker', 'entry' => 'stacked', 'skills' => 'columns',
+        'font' => 'firasans', 'accent' => '#1D4ED8', 'font_size' => 10.5, 'line_height' => 1.35, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 24, 'summary' => 'boxed',
+        'variants' => ['tinted', 'left'],
+    ]),
+    $t(['slug' => 'us-nova', 'name' => 'US Nova', 'country' => 'US', 'category' => 'creative', 'recommended' => false,
+        'description' => 'A deep indigo side column for contact details, skills and languages; solid section bands keep the main column crisp.'], [
+        'layout' => 'sidebar', 'heading' => 'solid', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'lato', 'accent' => '#4338CA', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'sidebar' => ['width' => 62, 'style' => 'dark'],
+        'variants' => ['left', 'right'],
+    ]),
+    $t(['slug' => 'us-chronicle', 'name' => 'US Chronicle', 'country' => 'US', 'category' => 'executive', 'recommended' => false,
+        'description' => 'Serif typography and a clean career timeline with dates in the margin: classic credibility with a modern rhythm.'], [
+        'layout' => 'single', 'header' => 'left', 'heading' => 'caps-rule', 'entry' => 'timeline', 'skills' => 'grouped',
+        'font' => 'plexserif', 'heading_font' => 'plexserif', 'accent' => '#0F766E', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'upper', 'name_size' => 22, 'summary' => 'plain',
+        'variants' => ['left', 'centered'],
     ]),
 
     // ───────────── Canada ─────────────
@@ -192,6 +258,29 @@ return [
         'section_order' => ['summary', 'skills', 'experience', 'education', 'certifications', 'volunteer', 'languages'],
         'variants' => ['left', 'centered'],
     ]),
+    $t(['slug' => 'ca-maple', 'name' => 'Canada Maple', 'country' => 'CA', 'category' => 'modern', 'recommended' => false,
+        'description' => 'A maple-red header band, marker headings and a timeline of roles: warm, confident and bilingual-ready.'], [
+        'layout' => 'single', 'header' => 'band', 'heading' => 'marker', 'entry' => 'timeline', 'skills' => 'columns',
+        'font' => 'lato', 'accent' => '#9F1239', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'variants' => ['band', 'left'],
+    ]),
+    $t(['slug' => 'ca-aurora', 'name' => 'Canada Aurora', 'country' => 'CA', 'category' => 'creative', 'recommended' => false,
+        'description' => 'A deep teal side column with skills and languages beside a spacious main column with accent headings.'], [
+        'layout' => 'sidebar', 'heading' => 'accent', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'firasans', 'accent' => '#0F766E', 'font_size' => 10, 'line_height' => 1.4, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'sidebar' => ['width' => 62, 'style' => 'dark'],
+        'variants' => ['left', 'right'],
+    ]),
+    $t(['slug' => 'ca-summit', 'name' => 'Canada Summit', 'country' => 'CA', 'category' => 'compact', 'recommended' => false,
+        'description' => 'A tinted header card and section titles in a slim left column: dense, orderly and elegant for experienced profiles.'], [
+        'layout' => 'gutter', 'header' => 'tinted', 'heading' => 'caps-plain', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'ptsans', 'accent' => '#334155', 'font_size' => 10, 'line_height' => 1.35, 'margins' => 'narrow', 'spacing' => 'normal',
+        'photo' => false, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 23, 'summary' => 'plain',
+        'gutter' => 38,
+        'variants' => ['tinted', 'left'],
+    ]),
 
     // ───────────── China ─────────────
     $t(['slug' => 'cn-classic', 'name' => 'China Classic', 'country' => 'CN', 'category' => 'classic', 'recommended' => true,
@@ -234,5 +323,27 @@ return [
         'gutter' => 30,
         'section_order' => ['summary', 'skills', 'projects', 'experience', 'education', 'awards', 'languages'],
         'variants' => ['left', 'split'],
+    ]),
+    $t(['slug' => 'cn-elite', 'name' => 'China Elite', 'country' => 'CN', 'category' => 'executive', 'recommended' => false,
+        'description' => '精英版：浅色标题卡片配照片，实心标题栏。A tinted header card with photo and solid section bands.'], [
+        'layout' => 'single', 'header' => 'tinted', 'heading' => 'solid', 'entry' => 'stacked', 'skills' => 'grouped',
+        'font' => 'lato', 'accent' => '#9F1239', 'font_size' => 10, 'line_height' => 1.45, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'variants' => ['tinted', 'photo-right'],
+    ]),
+    $t(['slug' => 'cn-jade', 'name' => 'China Jade', 'country' => 'CN', 'category' => 'creative', 'recommended' => false,
+        'description' => '翡翠版：深绿色侧栏放置照片、联系方式与技能。A deep jade side column with photo, contact details and skills.'], [
+        'layout' => 'sidebar', 'heading' => 'marker', 'entry' => 'stacked', 'skills' => 'inline',
+        'font' => 'lato', 'accent' => '#047857', 'font_size' => 10, 'line_height' => 1.45, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'square', 'name_case' => 'normal', 'name_size' => 25, 'summary' => 'plain',
+        'sidebar' => ['width' => 62, 'style' => 'dark'],
+        'variants' => ['left', 'right'],
+    ]),
+    $t(['slug' => 'cn-ink', 'name' => 'China Ink', 'country' => 'CN', 'category' => 'elegant', 'recommended' => false,
+        'description' => '水墨版：墨色时间轴与居中标题，简洁典雅。Ink-black timeline and a centred header: calm and elegant.'], [
+        'layout' => 'single', 'header' => 'centered', 'heading' => 'caps-rule', 'entry' => 'timeline', 'skills' => 'grouped',
+        'font' => 'plexserif', 'heading_font' => 'plexserif', 'accent' => '#111827', 'font_size' => 10, 'line_height' => 1.45, 'margins' => 'normal', 'spacing' => 'normal',
+        'photo' => true, 'photo_shape' => 'circle', 'name_case' => 'normal', 'name_size' => 24, 'summary' => 'plain',
+        'variants' => ['centered', 'left'],
     ]),
 ];

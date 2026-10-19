@@ -18,7 +18,7 @@ use App\Services\PhotoService;
 final class CvService
 {
     /** @return array<string, mixed> the new CV row */
-    public static function create(int $userId, string $country, string $language, ?string $templateSlug, string $title = ''): array
+    public static function create(int $userId, string $country, string $language, ?string $templateSlug, string $title = '', bool $fromProfile = false): array
     {
         $country = strtoupper($country);
         if (!Countries::exists($country)) {
@@ -38,7 +38,8 @@ final class CvService
         $language = Countries::resolveLanguage($country, $language);
         $c = Countries::get($country);
         $order = $template['config']['section_order'] ?? $c['section_order'];
-        $content = CvSchema::defaultContent($country, $language, $order);
+        $content = ($fromProfile ? \App\Services\Profile\ProfileService::contentForCv($userId, $language, $country, $order) : null)
+            ?? CvSchema::defaultContent($country, $language, $order);
         $design = Design::defaults($template, $country);
         $title = CvSchema::clean($title, 120);
         if ($title === '') {

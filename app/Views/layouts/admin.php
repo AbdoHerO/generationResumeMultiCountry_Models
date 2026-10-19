@@ -21,6 +21,7 @@ $cur = fn (string $p) => ($path === url($p) || ($p !== '/admin' && str_starts_wi
       <a href="<?= e(url('/admin/audit')) ?>"<?= $cur('/admin/audit') ?>><?= icon('activity') ?> Activity log</a>
       <div class="side-label">My space</div>
       <a href="<?= e(url('/dashboard')) ?>"><?= icon('layout-dashboard') ?> My CVs</a>
+      <a href="<?= e(url('/profile')) ?>"><?= icon('circle-user-round') ?> My profile</a>
     </nav>
     <?= App\Core\View::partial('partials/user-menu') ?>
   </aside>

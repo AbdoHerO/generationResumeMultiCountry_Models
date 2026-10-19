@@ -36,6 +36,7 @@ final class CvController extends Controller
             'templates' => Template::all(),
             'country' => Countries::exists($country) ? $country : '',
             'preselected' => $preselected,
+            'profileLanguages' => array_keys(array_filter(\App\Services\Profile\ProfileService::filledLanguages(\App\Services\Auth::id()))),
         ]);
     }
 
@@ -47,7 +48,8 @@ final class CvController extends Controller
                 $request->string('country'),
                 $request->string('language'),
                 $request->string('template') ?: null,
-                $request->string('title')
+                $request->string('title'),
+                $request->string('from_profile') === '1'
             );
         } catch (HttpException $e) {
             Session::flash('error', $e->getMessage());

@@ -85,6 +85,28 @@ final class CvApiController extends Controller
         return Response::ok(['pages' => $pdf['pages']]);
     }
 
+    public function fromProfile(Request $request): Response
+    {
+        $cv = $this->ownedCv($request);
+        $in = $request->json();
+        $lang = (string) ($in['language'] ?? $cv['language_code']);
+        $template = Template::find((int) ($in['templateId'] ?? $cv['template_id']));
+        $country = strtoupper((string) ($in['country'] ?? $cv['country_code']));
+        if (!$template || $template['country_code'] !== $country) {
+            throw new HttpException(422, 'This template is not available for the selected country.');
+        }
+        $names = \App\Services\Profile\ProfileService::LANGUAGE_NAMES;
+        if (!isset($names[$lang])) {
+            throw new HttpException(422, 'Your profile exists in French, English and Chinese. Switch this CV to one of these languages to fill it from your profile.', [], 'profile_language');
+        }
+        $order = $template['config']['section_order'] ?? (Countries::get($country)['section_order'] ?? []);
+        $content = \App\Services\Profile\ProfileService::contentForCv(Auth::id(), $lang, $country, $order);
+        if ($content === null) {
+            throw new HttpException(422, "Your profile has no {$names[$lang]} version yet. Fill it in or import a PDF from My profile.", [], 'profile_empty');
+        }
+        return Response::ok(['content' => $content, 'language' => $lang, 'languageName' => $names[$lang]]);
+    }
+
     public function rename(Request $request): Response
     {
         $cv = $this->ownedCv($request);

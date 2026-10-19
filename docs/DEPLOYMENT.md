@@ -56,3 +56,12 @@ After the first deployment:
 2. Sign in as the administrator, then choose a new password when asked.
 3. In Administration → Settings, set the application name and support e-mail.
 4. Create a test CV and download its PDF. The first PDF builds mPDF's font cache in `storage/`.
+
+## AI import (Groq)
+
+No server setting is required: after deploying, an administrator pastes the Groq API token in
+**Administration → Settings → CV import with AI (Groq)** and clicks **Test the connection**. The
+token is stored encrypted (key derived from `APP_KEY`) and used immediately, without a restart.
+Optional `.env` values: `GROQ_API_URL`, `GROQ_MODEL`, `GROQ_API_KEY` (fallback token),
+`GROQ_TIMEOUT`, and `GROQ_MAX_TOKENS` (950 for Groq's free tier, 8192 on a paid tier).
+PHP needs the `curl` and `sodium` extensions.

@@ -20,6 +20,7 @@ $apiBase = url('/api/cvs/' . $cv['id']);
         <button type="button" class="btn btn-ghost btn-icon" data-menu-button aria-expanded="false" aria-controls="ed-menu" aria-label="More actions"><?= icon('ellipsis-vertical') ?></button>
         <div class="menu" id="ed-menu" hidden>
           <button type="button" data-action="rename"><?= icon('pencil') ?> Rename</button>
+          <button type="button" data-action="from-profile"><?= icon('circle-user-round') ?> Fill from my profile</button>
           <button type="button" data-action="duplicate"><?= icon('copy') ?> Duplicate</button>
           <button type="button" data-action="save" class="show-sm"><?= icon('save') ?> Save now</button>
           <a href="<?= e(url('/cvs/' . $cv['id'] . '/download?inline=1')) ?>" target="_blank" rel="noopener"><?= icon('external-link') ?> Open PDF in a new tab</a>

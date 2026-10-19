@@ -2,7 +2,7 @@
 
 ResumeAtlas is a web application for writing a professional CV (résumé) and downloading it as a
 real A4 PDF. Each CV follows the conventions of one of five countries — **France, Morocco, the
-United States, Canada and China** — with five distinct templates per country (25 in total), in
+United States, Canada and China** — with eight distinct templates per country (40 in total), in
 French, English, Arabic (right-to-left) or Simplified Chinese.
 
 ![Editor](docs/screenshots/editor.png)
@@ -11,6 +11,9 @@ French, English, Arabic (right-to-left) or Simplified Chinese.
 |---|---|
 | ![Templates](docs/screenshots/templates.png) | ![Arabic CV](docs/screenshots/editor-arabic.png) |
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Administration](docs/screenshots/admin.png) |
+
+> **Full documentation:** [DOCUMENTATION.md](DOCUMENTATION.md): user guide, administration,
+> AI import, architecture, API, configuration, deployment, security, tests and troubleshooting.
 
 ## Features
 
@@ -31,6 +34,15 @@ French, English, Arabic (right-to-left) or Simplified Chinese.
   - Switch template, country or language at any time without losing content.
   - Design panel: accent colour (contrast-checked), font, text size, line spacing, margins,
     section spacing, date format, header or sidebar variant, length target.
+- **Global profile** — a master copy of your CV content in French, English and Chinese, edited
+  with the same editor. New CVs can start from it (“Fill this CV with my profile”), and any CV
+  can be refilled from it later (⋮ → Fill from my profile), then edited freely before download.
+- **Import a CV from PDF with AI** — the PDF's text is structured by `qwen/qwen3.8-27b` on Groq
+  and translated into French, English and Chinese; you review and edit every version before it
+  replaces your profile. The PDF is never stored. Works within Groq's free-tier limits (resumable,
+  automatic waiting) and in seconds on a paid tier.
+- **Groq API token managed by the administrator** — stored encrypted in the database, masked in
+  the interface, read again before every call: a new token is used immediately, without restart.
 - **Country conventions** in configuration (`config/countries.php`): section order, date
   formats, phone format, photo guidance, optional personal details, tips and length hints.
 - **PDF** — server-side with mPDF: strict A4, automatic extra pages, embedded fonts, Arabic shaping
@@ -38,7 +50,7 @@ French, English, Arabic (right-to-left) or Simplified Chinese.
   (`Camille_Laurent_CV_France.pdf`), downloads only for the owner.
 - **Administration** — overview statistics; users: search and filter, create an account (with a
   temporary password shown once), edit name and e-mail, reset a password (signs the user out),
-  activate/deactivate, grant or remove admin rights, delete an account with its CVs; templates (availability, name, description, category, languages,
+  activate/deactivate, grant or remove admin rights, delete an account with its CVs; AI import settings (token, model, test); templates (availability, name, description, category, languages,
   recommended flag, order), countries and languages, application settings, and an activity log.
 - **Accessible and responsive** — keyboard navigation, labelled controls, visible focus,
   `prefers-reduced-motion`, and phone layouts including an Edit/Preview switch in the editor.

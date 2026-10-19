@@ -196,6 +196,8 @@ final class CvRenderer
         }
         return match ($variant) {
             'band' => '<div class="hd-band">' . $this->nameBlock('band') . '</div>',
+            'tinted' => '<table class="hd hd-tint" cellspacing="0" cellpadding="0"><tr><td class="hd-l">' . $this->nameBlock('left') . '</td>'
+                . ($this->photoSrc ? '<td class="hd-photo">' . $this->photoImg(28) . '</td>' : '') . '</tr></table>',
             'split' => '<table class="hd hd-split" cellspacing="0" cellpadding="0"><tr><td class="hd-l">' . $this->photoInline() . $this->nameBlock('left', false)
                 . '</td><td class="hd-r">' . $this->contactLines(false) . '</td></tr></table>' . $this->detailsLine(),
             'photo-right' => '<table class="hd" cellspacing="0" cellpadding="0"><tr><td class="hd-l">' . $this->nameBlock('left', false) . $this->contactLines(false)
@@ -394,7 +396,8 @@ final class CvRenderer
         }
         // The heading shares a table with the first block, so a page break can never separate them.
         $first = array_shift($rows);
-        $out = '<table class="sec" cellspacing="0" cellpadding="0"><tr><td class="sh" role="heading" aria-level="2">' . $this->headingText($s) . '</td></tr>'
+        $marker = ($this->cfg['heading'] ?? '') === 'marker' ? '<span class="mk">&nbsp;&nbsp;</span>&nbsp;&nbsp;' : '';
+        $out = '<table class="sec" cellspacing="0" cellpadding="0"><tr><td class="sh" role="heading" aria-level="2">' . $marker . $this->headingText($s) . '</td></tr>'
             . '<tr><td class="sec-c">' . $first . '</td></tr></table>';
         foreach ($rows as $row) {
             $out .= '<table class="blk" cellspacing="0" cellpadding="0"><tr><td>' . $row . '</td></tr></table>';
@@ -425,6 +428,10 @@ final class CvRenderer
     private function textBlock(string $text, bool $summary): string
     {
         $style = $summary ? (string) ($this->cfg['summary'] ?? 'plain') : 'plain';
+        if ($style === 'boxed') {
+            // mPDF draws backgrounds and borders on table cells, not on blocks nested inside them.
+            return '<table class="tx-box" cellspacing="0" cellpadding="0"><tr><td>' . $this->multiline($text) . '</td></tr></table>';
+        }
         return '<div class="tx tx-' . $style . '">' . $this->multiline($text) . '</div>';
     }
 
@@ -525,6 +532,11 @@ final class CvRenderer
                 . '<div>' . $titleHtml . '</div>' . ($subHtml !== '' ? '<div>' . $subHtml . '</div>' : '')
                 . (trim($meta) !== '' ? '<div class="e-m">' . $this->text($meta) . '</div>' : '') . $body . '</td></tr></table>';
             return $html;
+        }
+        if ($entryStyle === 'timeline') {
+            return '<table class="en en-tl" cellspacing="0" cellpadding="0"><tr><td class="e-tl-d" style="width:26mm">' . $this->text($date) . '</td><td class="e-tl">'
+                . '<div>' . $titleHtml . '</div>' . ($subHtml !== '' ? '<div>' . $subHtml . '</div>' : '')
+                . (trim($meta) !== '' ? '<div class="e-m">' . $this->text($meta) . '</div>' : '') . $body . '</td></tr></table>';
         }
         if ($entryStyle === 'compact') {
             $line = $titleHtml . ($subHtml !== '' ? '<span class="e-sep">, </span>' . $subHtml : '') . (trim($meta) !== '' ? '<span class="e-m"> · ' . $this->text($meta) . '</span>' : '');
@@ -778,6 +790,7 @@ final class CvRenderer
         $en = $this->end;
         $tint = Design::tint($a, 0.9);
         $tintStrong = Design::tint($a, 0.82);
+        $tintRule = Design::tint($a, 0.6);
         $entryGap = max(1.6, $gap * 0.45);
 
         $heading = match ((string) ($this->cfg['heading'] ?? 'rule')) {
@@ -788,13 +801,16 @@ final class CvRenderer
             'double' => "text-transform:uppercase; letter-spacing:1.4pt; font-size:" . ($fs + 0.5) . "pt; color:$a; border-top:0.6pt solid $a; border-bottom:0.6pt solid $a; padding:0.9mm 0; text-align:center;",
             'caps-plain' => "text-transform:uppercase; letter-spacing:1.2pt; font-size:" . ($fs + 0.5) . "pt; color:$a;",
             'bilingual' => "font-size:" . ($fs + 1.5) . "pt; color:$a; border-bottom:0.8pt solid $rule; padding-bottom:0.8mm;",
+            'solid' => "text-transform:uppercase; letter-spacing:1.1pt; font-size:" . ($fs + 0.5) . "pt; color:#FFFFFF; background-color:$a; padding:1.3mm 3mm;",
+            'marker' => "text-transform:uppercase; letter-spacing:1.1pt; font-size:" . ($fs + 0.5) . "pt; color:#111827; border-bottom:0.6pt solid $tintRule; padding-bottom:1mm;",
             default => "font-size:" . ($fs + 2) . "pt; color:$a; border-bottom:0.6pt solid $rule; padding-bottom:0.8mm;",
         };
 
         $sb = $page['sidebar'];
-        $sbText = $sb && $sb['style'] === 'accent' ? '#FFFFFF' : '#1F2937';
-        $sbMuted = $sb && $sb['style'] === 'accent' ? Design::tint($a, 0.78) : $muted;
-        $sbHead = $sb && $sb['style'] === 'accent' ? '#FFFFFF' : $a;
+        $sbStyle = $sb['style'] ?? 'light';
+        $sbText = in_array($sbStyle, ['accent', 'dark'], true) ? '#FFFFFF' : '#1F2937';
+        $sbMuted = match ($sbStyle) { 'accent' => Design::tint($a, 0.78), 'dark' => Design::tint($a, 0.62), default => $muted };
+        $sbHead = match ($sbStyle) { 'accent' => '#FFFFFF', 'dark' => Design::tint($a, 0.55), default => $a };
 
         return <<<CSS
 body { font-family: $body; font-size: {$fs}pt; line-height: $lh; color: #1F2937; direction: {$this->dir}; text-align: $s; }
@@ -818,6 +834,12 @@ td { padding: 0; vertical-align: top; text-align: $s; }
 .hd-band .nm { color: #FFFFFF; }
 .hd-band .hl { color: $tintStrong; }
 .hd-band .ct, .hd-band .dt, .hd-band .dk, .hd-band .dot { color: #E5E7EB; }
+table.hd-tint td { background-color: $tint; }
+table.hd-tint td.hd-l { border-$s: 1.6mm solid $a; padding: 5mm 6mm; }
+table.hd-tint td.hd-photo { padding: 4mm 5mm 4mm 0; }
+.mk { background-color: $a; font-size: {$this->num($fs - 2)}pt; }
+td.e-tl-d { color: $a; font-weight: bold; font-size: {$this->num($fs - 0.8)}pt; padding-$en: 3mm; padding-top: 0.2mm; }
+td.e-tl { border-$s: 0.8pt solid $tintRule; padding-$s: 3.5mm; padding-bottom: 0.5mm; }
 .cl { margin-bottom: 1mm; }
 .cl-k { font-size: {$this->num($fs - 1.5)}pt; color: $muted; text-transform: uppercase; letter-spacing: 0.5pt; }
 .ph { color: #9CA3AF; }
@@ -838,7 +860,7 @@ ul.bl { margin: 0.8mm 0 0 0; padding-$s: 4.5mm; }
 ul.bl li { margin-bottom: 0.5mm; }
 .tx { }
 .tx-italic { font-style: italic; color: #374151; }
-.tx-boxed { background-color: $tint; border-$s: 1.2mm solid $a; padding: 2.6mm 3.2mm; }
+table.tx-box td { background-color: $tint; border-$s: 1.2mm solid $a; padding: 2.6mm 3.2mm; }
 .lv { color: $muted; font-size: {$this->num($fs - 1)}pt; }
 .sq { color: $a; }
 table.sk-g td { padding-bottom: 0.9mm; }
@@ -874,7 +896,7 @@ CSS;
         $bg = '#FFFFFF';
         if ($page['sidebar']) {
             $sb = $page['sidebar'];
-            $color = $sb['style'] === 'accent' ? $this->accent : Design::tint($this->accent, 0.9);
+            $color = Design::sidebarColor((string) $sb['style'], $this->accent);
             $w = $sb['width'];
             $bg = $sb['side'] === 'left'
                 ? "linear-gradient(to right, $color 0, $color {$w}mm, #FFFFFF {$w}mm)"

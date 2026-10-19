@@ -13,6 +13,7 @@ $cur = fn (string $p) => str_starts_with($path, url($p)) ? ' aria-current="page"
     <?= App\Core\View::partial('partials/brand') ?>
     <nav class="side-nav">
       <a href="<?= e(url('/dashboard')) ?>"<?= $cur('/dashboard') ?>><?= icon('layout-dashboard') ?> My CVs</a>
+      <a href="<?= e(url('/profile')) ?>"<?= $cur('/profile') ?>><?= icon('circle-user-round') ?> My profile</a>
       <a href="<?= e(url('/cvs/new')) ?>"<?= $cur('/cvs/new') ?>><?= icon('file-plus') ?> New CV</a>
       <a href="<?= e(url('/templates')) ?>"><?= icon('layout-template') ?> Templates</a>
       <a href="<?= e(url('/account')) ?>"<?= $cur('/account') ?>><?= icon('user') ?> Account</a>

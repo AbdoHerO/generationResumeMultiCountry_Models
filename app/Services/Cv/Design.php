@@ -94,6 +94,27 @@ final class Design
         return (1.05) / ($l + 0.05);
     }
 
+    /** Background of a sidebar style: pale tint (light), the accent itself, or a deep shade (dark). */
+    public static function sidebarColor(string $style, string $accent): string
+    {
+        return match ($style) {
+            'accent' => $accent,
+            'dark' => self::shade($accent, 0.62),
+            default => self::tint($accent, 0.9),
+        };
+    }
+
+    /** A darker shade of a colour (mix with black). */
+    public static function shade(string $hex, float $amount): string
+    {
+        $hex = ltrim($hex, '#');
+        $out = '#';
+        foreach (str_split($hex, 2) as $c) {
+            $out .= sprintf('%02X', (int) round(hexdec($c) * (1 - $amount)));
+        }
+        return $out;
+    }
+
     /** A pale tint of the accent for backgrounds (mix with white). */
     public static function tint(string $hex, float $amount): string
     {

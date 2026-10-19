@@ -15,6 +15,8 @@ abstract class HttpTestCase extends TestCase
 {
     /** @var resource|null */
     private static $server = null;
+    /** @var resource|null */
+    private static $mock = null;
     protected static string $base = '';
 
     public static function setUpBeforeClass(): void
@@ -24,10 +26,14 @@ abstract class HttpTestCase extends TestCase
         }
         $port = (int) (getenv('TEST_HTTP_PORT') ?: 8765);
         self::$base = "http://127.0.0.1:$port";
-        $env = array_merge(getenv(), ['DB_DATABASE' => (string) config('database.database'), 'APP_ENV' => 'testing', 'AUTO_MIGRATE' => 'false', 'MAIL_MAILER' => 'disabled']);
+        // The AI service is a local mock (tests/Support/groq-mock.php): no network, no real token.
+        $mockPort = $port + 1;
+        $env = array_merge(getenv(), ['DB_DATABASE' => (string) config('database.database'), 'APP_ENV' => 'testing', 'AUTO_MIGRATE' => 'false', 'MAIL_MAILER' => 'disabled',
+            'GROQ_API_URL' => "http://127.0.0.1:$mockPort/openai/v1/chat/completions", 'GROQ_MAX_TOKENS' => '950']);
         $cmd = [PHP_BINARY, '-S', "127.0.0.1:$port", '-t', BASE_PATH . '/public', BASE_PATH . '/public/index.php'];
         $null = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
         self::$server = proc_open($cmd, [0 => ['pipe', 'r'], 1 => ['file', $null, 'w'], 2 => ['file', $null, 'w']], $pipes, BASE_PATH, $env);
+        self::$mock = proc_open([PHP_BINARY, '-S', "127.0.0.1:$mockPort", BASE_PATH . '/tests/Support/groq-mock.php'], [0 => ['pipe', 'r'], 1 => ['file', $null, 'w'], 2 => ['file', $null, 'w']], $mockPipes, BASE_PATH);
         for ($i = 0; $i < 50; $i++) {
             $fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.2);
             if ($fp) {
@@ -40,6 +46,10 @@ abstract class HttpTestCase extends TestCase
             if (self::$server) {
                 proc_terminate(self::$server);
                 self::$server = null;
+            }
+            if (self::$mock) {
+                proc_terminate(self::$mock);
+                self::$mock = null;
             }
         });
     }

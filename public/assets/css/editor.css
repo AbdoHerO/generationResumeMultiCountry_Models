@@ -149,6 +149,13 @@ body.editor-page { height: 100vh; height: 100dvh; overflow: hidden; background: 
 .ed-preview-loading { position: absolute; top: 12px; right: 16px; background: var(--surface); border-radius: 999px; padding: 6px; box-shadow: var(--shadow-sm); color: var(--primary); display: grid; }
 .ed-preview-loading[hidden] { display: none; }
 
+/* ───────── Profile and import review: the editor without preview ───────── */
+.editor.no-preview .ed-body { grid-template-columns: minmax(0, 900px); justify-content: center; background: var(--bg); }
+.editor.no-preview .ed-panel { border-left: 1px solid var(--border); }
+.profile-bar { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.profile-bar .seg { align-self: flex-start; }
+.profile-bar .seg button { display: inline-flex; align-items: center; gap: 6px; }
+
 /* ───────── Responsive ───────── */
 @media (max-width: 1100px) {
   .ed-body { grid-template-columns: minmax(340px, 420px) 1fr; }

@@ -97,7 +97,7 @@ final class PdfService
     private function stripImage(array $page, string $accent): string
     {
         $sb = $page['sidebar'];
-        $color = $sb['style'] === 'accent' ? $accent : Design::tint($accent, 0.9);
+        $color = Design::sidebarColor((string) $sb['style'], $accent);
         $key = substr(sha1($color . '|' . $sb['width'] . '|' . $sb['side']), 0, 16);
         $file = Storage::path('cache/strips') . '/' . $key . '.png';
         if (!is_file($file)) {

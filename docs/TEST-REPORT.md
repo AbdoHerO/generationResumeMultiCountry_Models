@@ -6,17 +6,19 @@ is reported as passing that was not executed. No CI workflow was used.
 
 ## Automated suites (PHPUnit 11)
 
-`vendor/bin/phpunit` → **OK, 51 tests, 722 assertions** (about 12 s), on a dedicated
+`vendor/bin/phpunit` → **OK, 64 tests, 1,014 assertions** (about 18 s), on a dedicated
 `cvbuilder_test` database.
 
 | Suite | Tests | What it checks |
 |---|---|---|
-| Unit · `CvSchemaTest` | 13 | structure validation, unknown keys and section types dropped (mass assignment), unique section types, string cleaning and truncation, http(s)-only links, date formats, entry field whitelists, duplicate ids, section/item/bullet limits, status and completeness |
+| Unit · `CvSchemaTest` | 12 | structure validation, unknown keys and section types dropped (mass assignment), unique section types, string cleaning and truncation, http(s)-only links, date formats, entry field whitelists, duplicate ids, section/item/bullet limits, status and completeness |
 | Unit · `DesignAndLabelsTest` | 6 | design defaults per template and country (no photo for the US), rejection of unreadable colours, unknown fonts and out-of-range sizes, palette contrast ≥ 4.5:1, date formats in English, French and Chinese, RTL direction, completeness of the French, Arabic and Chinese label files |
-| Unit · `CatalogueTest` | 5 | 5 countries × ≥ 5 templates (25 distinct), first template of each country is a single-column recommended layout, valid template settings, every font file present, country conventions, new-CV section order and phone code |
+| Unit · `CatalogueTest` | 5 | 5 countries × 8 templates (40 distinct), first template of each country is a single-column recommended layout, valid template settings, every font file present, country conventions, new-CV section order and phone code |
+| Unit · `ImporterTest` | 8 | PDF text split into parts that fit the output limit with no text lost; CJK token estimate; translation touches only human-readable strings (names, e-mails, dates never sent) and puts them back in place; long texts split and joined; parts merged with a continued entry re-attached; token encryption, tampering refused, masking; a token changed by another process is read on the next call; rate-limit durations; JSON answers with code fences |
 | Unit · `PhotoServiceTest` | 5 | re-encoded square JPEG + circle PNG stored outside `public/`, copy and delete, PHP file and fake image rejected, path traversal rejected, real upload required by default |
-| Pdf · `PdfGenerationTest` | 7 | **every template in every language it supports (49 combinations) renders a one-page A4 PDF** (MediaBox 595.28 × 841.89 pt); Latin text extractable (smalot/pdfparser); XB Riyaz embedded for Arabic and Sun-ExtA for Chinese; long content flows onto 2+ pages in single and sidebar layouts; user HTML is escaped; an empty CV renders; file names (accents, Chinese, path characters) |
-| Http · `AdminUserManagementTest` | 5 | template previews on the admin page open full size; | an administrator creates an account (e-mail stored in lower case, bcrypt hash, temporary password shown once and never in the audit log), the new user must change it before anything else; duplicate and invalid input refused; edit name and e-mail (an e-mail used by another account refused); password reset signs the user out, the old password stops working, the temporary one forces a change; status from the user page; delete only with the exact e-mail typed, CVs deleted with the account; actions audited; an administrator cannot reset or delete their own account; users get 403 on every one of these routes |
+| Pdf · `PdfGenerationTest` | 7 | **every template in every language it supports (79 combinations) renders a one-page A4 PDF** (MediaBox 595.28 × 841.89 pt); Latin text extractable (smalot/pdfparser); XB Riyaz embedded for Arabic and Sun-ExtA for Chinese; long content flows onto 2+ pages in single and sidebar layouts; user HTML is escaped; an empty CV renders; file names (accents, Chinese, path characters) |
+| Http · `AdminUserManagementTest` | 5 | template previews on the admin page open full size (40 thumbnails); an administrator creates an account (e-mail stored in lower case, bcrypt hash, temporary password shown once and never in the audit log), the new user must change it before anything else; duplicate and invalid input refused; edit name and e-mail (an e-mail used by another account refused); password reset signs the user out, the old password stops working, the temporary one forces a change; status from the user page; delete only with the exact e-mail typed, CVs deleted with the account; actions audited; an administrator cannot reset or delete their own account; users get 403 on every one of these routes |
+| Http · `ProfileImportTest` | 5 | against a local mock of Groq's API (no network): administrator saves the token — encrypted at rest, masked on the page, absent from the audit log, connection test passes, users get 403; PDF upload → resumable steps → French/English/Chinese versions (names and e-mails kept) → review edits → 409 on a stale edit → apply once → profile has three versions; another user gets 404 on the import; **wrong token refused, then the corrected token used by the same running server without restart**; import disabled or a non-PDF refused; profile edited with conflict detection; new CV filled from the profile in the template's section order, and empty without the option; fill from profile in the editor (Chinese), languages without a version refused, other users 404 |
 | Http · `HttpFlowTest` | 11 | starts `php -S` on the test database and goes through the real stack: public pages, CSP and security headers, HttpOnly + SameSite cookies, 404s, `/health`; the admin password never appears publicly; guests redirected to sign-in, API 401; CSRF refusal on forms and on the API (forged delete changes nothing); registration validation and duplicate e-mails; sign-in throttling (even the right password is refused while throttled); create → save → **409 on a stale version without overwriting** → preview → exact page count → PDF download with file name and page-count header; rename (Chinese), search, duplicate, delete; **another user gets 404 on every page and API action on someone else's CV, and the CV is unchanged**; users get 403 on administration; photo upload, privacy and rejection of a disguised PHP file; **administrator first sign-in forced to a new password (the initial one cannot be kept, administration blocked until then), bcrypt hash stored**, every admin page, deactivating a user signs them out and blocks sign-in, an admin cannot demote themselves, admin actions audited, no password in the audit log |
 
 ## Browser checks (headless Chrome)
@@ -44,7 +46,25 @@ Bugs found by these checks and fixed before this report:
 PDFs were also inspected visually during development (French, English, Arabic and Chinese samples
 in every layout).
 
+## Real AI service checks (Groq, `qwen/qwen3.8-27b`)
+
+Run by hand with the owner's free-tier key from the local `.env`, on 2026-10-19:
+
+| Check | Result |
+|---|---|
+| Connection test | answered in 538 ms |
+| Extraction of the French sample CV (1,519 characters) | 3.4–4 s; French detected; personal details, 7 sections, dates and the current job correct |
+| Full import over HTTP (upload → 2 extraction parts → English and Chinese → review → edit → apply → CV from profile → PDF) | **14/14 checks passed**; about 110 s in total, about 100 s of which waiting for Groq's per-minute quota |
+| Chinese version | translated text; names, e-mails, dates and booleans unchanged |
+| Free-tier limit found | Groq refuses any request with `max_completion_tokens` above 1,000 (output tokens per minute) for this model, which is why the import works in parts (`GROQ_MAX_TOKENS=950`) |
+
+The browser check of the new pages (profile in three languages, import page, wizard option,
+CV created from the profile with a new template, "Fill from my profile", admin AI settings)
+showed no console or network error.
+
 ## Not tested, or only partly
+
+- **The AI import on the production server** (it needs the administrator to enter a token there), and imports of long multi-page CVs, Arabic or Chinese PDFs, or unusual layouts with the real model. Model output quality varies; the review step exists for that.
 
 - **MySQL 8 itself.** Only MariaDB 10.4 was available locally. The SQL is standard (InnoDB,
   utf8mb4, no MariaDB-only syntax), but the first run on MySQL 8 is the real check.

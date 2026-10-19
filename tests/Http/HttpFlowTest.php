@@ -99,7 +99,7 @@ final class HttpFlowTest extends HttpTestCase
         $id = $this->createCv($c, 'FR', 'fr', 'fr-modern');
         $state = $this->editorState($c, $id);
         $this->assertSame('FR', $state['cv']['country']);
-        $this->assertCount(5, array_filter($state['templates'], fn ($t) => $t['country'] === 'FR'));
+        $this->assertCount(8, array_filter($state['templates'], fn ($t) => $t['country'] === 'FR'));
 
         $payload = $this->savePayload($state);
         $payload['content']['personal']['fullName'] = 'Élise Durand';

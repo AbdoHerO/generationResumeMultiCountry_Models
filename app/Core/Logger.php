@@ -16,6 +16,12 @@ final class Logger
     }
 
     /** @param array<string, mixed> $context */
+    public static function warning(string $message, array $context = []): void
+    {
+        self::write('warning', $message, $context);
+    }
+
+    /** @param array<string, mixed> $context */
     public static function info(string $message, array $context = []): void
     {
         self::write('info', $message, $context);

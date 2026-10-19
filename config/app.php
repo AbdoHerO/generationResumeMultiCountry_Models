@@ -38,6 +38,25 @@ return [
         'register_per_hour' => 10,
     ],
 
+    // CV import with an LLM through Groq's OpenAI-compatible chat API. The API token is set by an
+    // administrator (stored encrypted in the database); GROQ_API_KEY is only a fallback.
+    // A token mistakenly placed in GROQ_API_URL is used as the fallback key, with the default URL.
+    'ai' => [
+        'url' => preg_match('#^https?://#i', (string) env('GROQ_API_URL', '')) ? (string) env('GROQ_API_URL') : 'https://api.groq.com/openai/v1/chat/completions',
+        'model' => (string) env('GROQ_MODEL', 'qwen/qwen3.8-27b'),
+        'env_key' => (string) (env('GROQ_API_KEY') ?? (preg_match('#^gsk_[A-Za-z0-9]+$#', (string) env('GROQ_API_URL', '')) ? env('GROQ_API_URL') : '')),
+        // Seconds per API call: below the 60 s request limit of the web server.
+        'timeout' => (int) env('GROQ_TIMEOUT', '50'),
+        // Output tokens per request. Groq's free tier refuses more than 1000 for some models;
+        // raise it (e.g. 8192) on a paid tier so imports need fewer, larger requests.
+        'max_tokens' => (int) env('GROQ_MAX_TOKENS', '950'),
+        'import_max_bytes' => 5 * 1024 * 1024,
+        'import_max_chars' => 20000,
+        // Seconds of work per import step request (each stays under the 60 s web server limit).
+        'step_budget' => 48,
+        'imports_per_hour' => 10,
+    ],
+
     'mail' => [
         'mailer' => env('MAIL_MAILER', 'disabled'),
         'host' => env('MAIL_HOST', ''),
